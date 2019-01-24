@@ -8,6 +8,7 @@ function core:create(party, foes)
     self.ui.turn = self.ui:child(ui.turn_queue)
     self.ui.turn.__transform.pos = vec2(gfx.getWidth() - 150, 100)
     self.sprites = self:child()
+    self.icons = dict()
     self.state = state()
 
     self.party_ids = list()
@@ -18,7 +19,7 @@ function core:create(party, foes)
             self.state, i, typepath
         )
         core.setup_actor_gfx(
-            self.sprites, self.state, self.party_ids[i], typepath
+            self.sprites, self.icons, self.state, self.party_ids[i], typepath
         )
     end
     for i, typepath in ipairs(foes) do
@@ -26,8 +27,12 @@ function core:create(party, foes)
             self.state, -i, typepath
         )
         core.setup_actor_gfx(
-            self.sprites, self.state, self.foe_ids[i], typepath
+            self.sprites, self.icons, self.state, self.foe_ids[i], typepath
         )
+    end
+
+    for _, id in ipairs(self.party_ids:concat(self.foe_ids)) do
+        self.ui.turn:push_back({icon = self.icons[id]})
     end
     -- Activate dummy battle
 end
@@ -54,7 +59,7 @@ function core.setup_actor_state(state, index, type)
     return state, id
 end
 
-function core.setup_actor_gfx(sprites, state, id, type)
+function core.setup_actor_gfx(sprites, icons, state, id, type)
     local typedata = require("actor." .. type)
 
     sprites[id] = sprites:child(Sprite, typedata.sprite())
@@ -65,6 +70,7 @@ function core.setup_actor_gfx(sprites, state, id, type)
     sprites[id].__transform.pos = position.get_world(
         state:read("position"), id
     )
+    icons[id] = typedata.icon()
 
     if index < 0 then
         sprites[id].__transform.scale.x = -sprites[id].__transform.scale.x

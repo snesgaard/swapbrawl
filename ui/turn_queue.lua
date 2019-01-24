@@ -17,24 +17,22 @@ function ui:padding()
 end
 
 function ui:pos()
-    return gfx.getWidth() - 150, 50
+    return 0, 0
 end
 
 function ui.item_size()
     return 40, 40
 end
 
-function ui:draw_item(x, y, w, h, item)
-    local frame = get_atlas("art/icons"):get_animation("fencer_icon")
-
-    --atlas:draw("fencer_icon", x, y, 0, 2, 2)
-    frame:draw(x, y, 0, 2, 2)
+function ui:draw_item(item, x, y, w, h)
+    --local frame = get_atlas("art/icons"):get_animation("fencer_icon")
+    item.icon:draw(x, y, 0, 2, 2)
 end
 
 function ui:__draw(x, y)
     self.__dress:draw()
-    for _, s in pairs(self.__layout.items) do
-        self:draw_item(s:unpack())
+    for item, s in pairs(self.__layout.items) do
+        self:draw_item(item ,s:unpack())
     end
 end
 

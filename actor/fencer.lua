@@ -14,6 +14,10 @@ function fencer.sprite()
     return get_atlas("art/main_actors"), animations
 end
 
+function fencer.icon()
+    return get_atlas("art/icons"):get_animation("fencer_icon")
+end
+
 function fencer.basestats()
     return {
         health = 10,
