@@ -11,6 +11,8 @@ local function traverse(dir, parts, combo)
         return traverse(
             v, parts:body(), (combo or list(dir)):insert(v)
         )
+    else
+        return combo
     end
 end
 
@@ -67,18 +69,18 @@ function state:read(path)
 end
 
 function state:map(path, m, ...)
-    local v = self:get(path)
+    local v = self:read(path)
     if not v then return end
-    return self:set(path, m(v, ...))
+    return self:write(path, m(v, ...))
 end
 
 function state:write(path, value)
     local parts = string.split(path, '/')
-    local dirs = traverse(self.root, parts:erase())
+    local dirs = traverse(self.root, parts)
 
     if not dirs then
         log.warn("Path <%s> not valid", path)
-        return
+        return self
     end
 
     for i = #parts, 1, -1 do

@@ -14,4 +14,11 @@ function fencer.sprite()
     return get_atlas("art/main_actors"), animations
 end
 
+function fencer.basestats()
+    return {
+        health = 10,
+        stamina = 100
+    }
+end
+
 return fencer

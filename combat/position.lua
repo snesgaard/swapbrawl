@@ -32,7 +32,7 @@ function position.set(state, id, place)
         state = state:set(id)
     end
 
-    return state:set(id, value):set(value, id)
+    return state:set(id, place):set(place, id)
 end
 
 function position.remove(state, arg)
@@ -77,7 +77,7 @@ function position.get_world(state, arg, opt)
         error(string.format("Id <%s> was not found", id))
         return
     end
-    local offset = flag * offset * place
+    local offset = offset * place
     return center - offset
 end
 

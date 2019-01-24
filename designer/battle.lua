@@ -2,14 +2,13 @@ function love.load(arg)
     nodes = Node.create()
     nodes:child(require("combat.turn_queue"))
     nodes.sfx = nodes:child()
-    nodes.core = nodes:child(require "combat.core")
 
     gfx.setBackgroundColor(0.2, 0.3, 0.4, 1)
 
 
     for _, path in ipairs(arg) do
         local f = require(path:gsub('.lua', ''))
-        nodes.battle = nodes:child(f)
+        nodes.core = nodes:child(require "combat.core", f.args())
     end
 
     function reload_scene()

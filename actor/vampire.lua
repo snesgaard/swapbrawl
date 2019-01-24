@@ -10,4 +10,11 @@ function actor.sprite()
     return get_atlas("art/main_actors"), animations
 end
 
+function actor.basestats()
+    return {
+        health = 20,
+        stamina = 100
+    }
+end
+
 return actor
