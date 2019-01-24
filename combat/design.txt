@@ -1,0 +1,14 @@
+General components:
+  Status register
+  Attribute register
+
+  Front line
+  Back line
+
+  Animation queue
+
+  Turn Manager / Interrupts
+
+  Script Manager
+
+  Damage Engine

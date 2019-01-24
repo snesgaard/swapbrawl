@@ -1,0 +1,6 @@
+[submodule "nodeworks"]
+	path = nodeworks
+	url = https://github.com/snesgaard/nodeworks
+[submodule "art_damnit"]
+	path = art
+	url = https://github.com/snesgaard/art_damnit

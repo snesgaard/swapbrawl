@@ -1,0 +1,74 @@
+Six player characters will face up to three foes in a boss rush style game.
+Blends real-time input with strategic turn-based combat.
+
+|  |   |   vs  |  |  |
+
+# Combat Basics
+
+Up to three player characters will be on the field itself, the rest in reserve.
+On-field characters will be able to perform traditional actions such as
+attacking, casting spells defending etc. Reserve characters can dynamically be
+swapped in and provide assists as part of an offensive or defensive action.
+
+The primary action currency is stamina. All action will require it. Reserve characters
+recorder stamina automatically (e.g. every fourth turn). Front characters recover
+only as a part of a spell or when defending.
+
+Each character has two assist, one for offensive and one for defensive.
+Respectively performed during allied or foe attacks. An assist will swap out
+the reserve character for the afflicted front character.
+
+Combat ends when all characters on one side is incapacitated.
+
+# Spell Casting
+Casting a spell can be initialized by a front character. This will put a cast
+action into the turn queue. On this action the character can release the spell
+or continue chanting to build up power. This can be repeated three times.
+
+# Stats
+There are the following visible statistics:
+
+  * Max health
+  * Health
+  * Max Stamina
+  * Stamina
+  * Power
+
+The following are hidden behind the scenes:
+
+  * Agility -- Affects turn order, dodge chance
+  * Power -- Affects damage and healing
+  * Armor -- Affects recieved damage
+  * Charge -- Double the next damage or healing
+  * Shield --  Voids the next received damage
+
+# Components
+
+  # Stage manager
+    The stage upon which combat takes place. Is responsible for the general
+    flow of combat. I.e. whose turn it is, what actors are present and where.
+
+    Responsible for loading and drawing the background tileset along with
+    any auxillerary animations.
+
+  # Assist manager
+    When an action is perfomed this manager is reposible for listening to player
+    input and provide activate an assist action. Interaction is as follows:
+
+      * Player down the ctrl key
+      * Time for current animation is slowed
+      * Player presses either A W or S to select a character reaction
+      * Time resumes its normal flow
+
+  # Stat manager
+    Responsible for handling combat stats and notifying other components when
+    something has changed.
+
+  # Turn manager
+    Handles turn ordering and execution of turn actions. This includes UI
+    and other stuff. Each action consist of a character ID and a function
+    or perhaps just a function.
+
+  # Combat manager
+    More a framework than anything else. Handles things like damage calculations.
+    Also notifies
