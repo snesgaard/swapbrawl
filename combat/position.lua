@@ -8,6 +8,16 @@ local function get_default_offset()
     return vec2(135, 0)
 end
 
+function position.is_party(state, arg)
+    local id, place = position.pairget(state, arg)
+    return place > 0
+end
+
+function position.is_foe(state, arg)
+    local id, place = position.pairget(state, arg)
+    return place < 0
+end
+
 function position.pairget(state, arg)
     local res = state[arg]
 

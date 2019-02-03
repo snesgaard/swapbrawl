@@ -1,18 +1,21 @@
 function love.load(arg)
-    nodes = Node.create()
-    nodes:child(require("combat.turn_queue"))
-    nodes.sfx = nodes:child()
+    root = Node.create()
+    root.sfx = root:child()
 
-    gfx.setBackgroundColor(0.2, 0.3, 0.4, 1)
-
+    --gfx.setBackgroundColor(0.2, 0.3, 0.4, 0)
+    gfx.setBackgroundColor(0, 0, 0, 0)
 
     for _, path in ipairs(arg) do
         local f = require(path:gsub('.lua', ''))
-        nodes.core = nodes:child(require "combat.core", f.args())
+        root.core = root:child(require "combat.core", f.args())
     end
 
     function reload_scene()
         love.load(arg)
+    end
+
+    function root.keypressed(...)
+        root.core:keypressed(...)
     end
 
     function lurker.preswap(f)
@@ -27,10 +30,10 @@ end
 
 function love.update(dt)
     lurker:update()
-    nodes:update(dt)
+    root:update(dt)
     timer.update(dt)
 end
 
 function love.draw()
-    nodes:draw(0, 0)
+    root:draw(0, 0)
 end

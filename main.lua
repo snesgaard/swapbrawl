@@ -35,4 +35,8 @@ end
 
 function love.keypressed(key, scancode, isrepeat)
     if key == "escape" then love.event.quit() end
+
+    if root and root.keypressed then
+        root.keypressed(key, scancode, isrepeat)
+    end
 end

@@ -1,40 +1,112 @@
-local function invoke(id, f, ...)
-    return f(id, ...)
+local function _delay_factor(agility)
+    return 1.0 - agility / 10.0
+end
+
+local function _get_delay(id, agility, delay)
+    local a = agility[id]
+    local f = _delay_factor(a or 0)
+    return delay * f
+end
+
+local function _reorder(delays)
+    local order = delays
+        :keys()
+        :sort(function(a, b)
+            return delays[a] > delays[b]
+        end)
+
+    return order
+end
+
+local function _normalize(_delays, order)
+    if #_delays == 0 or #order == 0 then
+        return _delays
+    end
+
+    local min_delay = _delays[order:head()]
+    if min_delay <= 0 then
+        return _delays
+    end
+
+    for id, delay in pairs(_delays) do
+        _delays[id] = delay - min_delay
+    end
+
+    return _delays
+end
+
+local function _future_index(order, delays, id, agility, delay)
+    if not delay then
+        error("Delay must be set!")
+    end
+
+    delay = _get_delay(id, agility, delay)
+
+    local next_index = order:argfind(function(key)
+        return delays[key] > delay
+    end)
+
+    -- If we did not find anything assume last place
+    return next_index or #order + 1
 end
 
 local queue = {}
+queue.__index = queue
 
-function queue:create()
-    self._queue = list()
-    self._on_action_begin = event()
-    self._on_action_end = event()
+function queue.create(_delays, _order, _action)
+    local this = {}
+    this._delays = _normalize(
+        _delays or dict(), _order or list()
+    )
+    this._order = _order or _reorder(this._delays)
+    this._action = _action or dict()
+    return setmetatable(this, queue)
 end
 
-function queue:add(id, func, ...)
-    self._queue[#self._queue + 1] = {id, func, ...}
-    return self:awake()
-end
+function queue:setup(actors, agility, _action)
+    local _actordelay = dict()
 
-function queue:_awake()
-    if not self._handler_co then
-        self._handler_co = self:fork(self._handler)
-    end
-    return self
-end
-
-function queue:_handler()
-    if #self._queue == 0 then return end
-
-    while #self._queue > 0 do
-        local action = self._queue:head()
-        self._queue = self._queue:body()
-
-        self._on_action_begin(unpack(action))
-        invoke(unpack(action))
-        self._on_action_end(unpack(action))
+    for _, id in ipairs(actors) do
+        _actordelay[id] = _get_delay(id, agility, 10)
     end
 
-    self._handler_co = nil
+    return queue.create(_actordelay, nil, _action)
 end
+
+function queue:advance(id, agility, delay, action)
+    delay = _get_delay(id, agility, delay or 10)
+    local prev_delay = self._delays[id] or 0
+    delay = delay + prev_delay
+    -- remove actor from agility
+    local cur_index = self._order:argfind(id)
+    -- Remove if present in order list
+    _order = cur_index and self._order:erase(cur_index) or self._order
+    -- Get future index
+    local index = _future_index(_order, self._delays, id, agility, delay)
+    print(index, _order)
+    return queue.create(
+        self._delays:set(id, delay), _order:insert(id, index),
+        self._action:set(id, action)
+    )
+end
+
+function queue:remove(id)
+    local cur_index = self._order:argfind(id)
+    if cur_index then
+        return queue.create(
+            self._delays:set(id), self._order:erase(cur_index),
+            self._action:set(id)
+
+        )
+    else
+        return self
+    end
+end
+
+function queue:next()
+    local id = self._order:head()
+    return id, self._action[id]
+end
+
 
 return queue

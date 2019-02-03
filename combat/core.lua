@@ -1,5 +1,6 @@
 local state = require "combat.state"
 local position = require "combat.position"
+local turn_queue = require "combat.turn_queue"
 
 local core = {}
 
@@ -19,22 +20,41 @@ function core:create(party, foes)
             self.state, i, typepath
         )
         core.setup_actor_gfx(
-            self.sprites, self.icons, self.state, self.party_ids[i], typepath
+            self.sprites, self.ui.turn, self.state, self.party_ids[i], typepath
         )
     end
+
     for i, typepath in ipairs(foes) do
         self.state, self.foe_ids[i] = core.setup_actor_state(
             self.state, -i, typepath
         )
         core.setup_actor_gfx(
-            self.sprites, self.icons, self.state, self.foe_ids[i], typepath
+            self.sprites, self.ui.turn, self.state, self.foe_ids[i], typepath
         )
     end
 
-    for _, id in ipairs(self.party_ids:concat(self.foe_ids)) do
-        self.ui.turn:push_back({icon = self.icons[id]})
-    end
-    -- Activate dummy battle
+    self.turn_queue = turn_queue.create()
+        :setup(self.party_ids + self.foe_ids, self.state)
+
+    self.ui.turn:advance(self.turn_queue)
+    local first = self.turn_queue:next()
+    self.turn_queue = self.turn_queue:advance(
+        "vampire_0002", self.state:read("actor/agility"), 1
+    )
+    self.ui.turn:advance(self.turn_queue)
+    self.turn_queue = self.turn_queue:advance("fencer_0001", self.state:read("actor/agility"), 20)
+    self.ui.turn:advance(self.turn_queue)
+    self.turn_queue = self.turn_queue:advance("fencer_0002", self.state:read("actor/agility"), 10)
+    self.ui.turn:advance(self.turn_queue)
+
+    self.ui.marker = self:child(
+        require "ui.target_selection", self.party_ids + self.foe_ids,
+        self.state
+    )
+end
+
+function core:keypressed(...)
+    self.ui.marker:keypressed(...)
 end
 
 function core.setup_actor_state(state, index, type)
@@ -59,7 +79,7 @@ function core.setup_actor_state(state, index, type)
     return state, id
 end
 
-function core.setup_actor_gfx(sprites, icons, state, id, type)
+function core.setup_actor_gfx(sprites, turnui, state, id, type)
     local typedata = require("actor." .. type)
 
     sprites[id] = sprites:child(Sprite, typedata.sprite())
@@ -70,8 +90,7 @@ function core.setup_actor_gfx(sprites, icons, state, id, type)
     sprites[id].__transform.pos = position.get_world(
         state:read("position"), id
     )
-    icons[id] = typedata.icon()
-
+    turnui:register_icon(id, typedata.icon())
     if index < 0 then
         sprites[id].__transform.scale.x = -sprites[id].__transform.scale.x
     end

@@ -44,13 +44,12 @@ local combo = {value = 1, items = {'A', 'B', 'C'}}
 local slider_state = {value=75, min=0, max=100, step=20}
 
 function love.update(dt)
-   dress.layout:reset(100, 100, 5, 5)
-   dress:Progress(slider_state, {vertical=false, id="foo"}, dress.layout:col(100, 10))
    --dress:Input(input, dress.layout:row())
+   nodes:update(dt)
 end
 
 function love.draw()
-    --nodes:draw(gfx.getWidth() / 2, gfx.getHeight() / 2)
+    nodes:draw(gfx.getWidth() / 2, gfx.getHeight() / 2)
     gfx.setColor(1, 1, 1)
     dress:draw()
 end

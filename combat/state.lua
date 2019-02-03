@@ -32,6 +32,7 @@ function state.create(root)
             max_health = dict{},
             stamina = dict{},
             max_stamina = dict{},
+            agility = dict{},
             type = dict{},
         },
         position = dict{
@@ -63,9 +64,8 @@ end
 
 function state:read(path)
     local parts = string.split(path, '/')
-
     local t = traverse(self.root, parts)
-    if t then return t:tail() end
+    if t and #t > #parts then return t:tail() end
 end
 
 function state:map(path, m, ...)
@@ -180,6 +180,17 @@ function state:event(path, data)
     end
 
     return state
+end
+
+-- Utility functions
+function state:agility(id)
+    local a = self:read("actor/agility")
+    return id and a[id] or a
+end
+
+function state:position(id)
+    local p = self:read("position")
+    return id and p[id] or p
 end
 
 return function()
