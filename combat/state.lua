@@ -193,6 +193,14 @@ function state:position(id)
     return id and p[id] or p
 end
 
+function state:health(id)
+    return self:read("actor/health/" .. id), self:read("actor/max_health/" .. id)
+end
+
+function state:stamina(id)
+    return self:read("actor/stamina/" .. id), self:read("actor/max_stamina/" .. id)
+end
+
 return function()
     return state.create()
 end

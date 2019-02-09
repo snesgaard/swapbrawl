@@ -9,7 +9,7 @@ function charbar:create()
             min=0,
             max=100,
             value=50,
-            color={0.85, 0.45, 0.1}
+            color={1.0, 0.7, 0.5}
         },
         -- Label components
         str = {
@@ -17,6 +17,11 @@ function charbar:create()
             font=font(12),
             align="right",
             valign="center",
+            color = {
+                normal = {
+                    fg = {1.0, 1.0, 1.0}
+                }
+            }
         }
     }
     self.hp = {
@@ -25,7 +30,7 @@ function charbar:create()
             min=0,
             max=50,
             value=25,
-            color = {0.1, 0.65, 0.3},
+            color = {1.0, 0.5, 0.5},
         },
         str={
             -- Label components
@@ -33,9 +38,15 @@ function charbar:create()
             font=font(12),
             align="right",
             valign="center",
+            color = {
+                normal = {
+                    fg = {1.0, 1.0, 1.0}
+                }
+            }
         }
     }
     self:rebuild()
+    self.layout = self:build_layout()
 end
 
 function charbar:set_stamina(value, max)
@@ -64,6 +75,12 @@ function charbar:rebuild()
     local bar = atlas:get_animation("charbar")
     local overlay = atlas:get_animation("char_icon_holder")
 
+    local label_opt = {
+        align="left",
+        valign="center",
+        font = font(12),
+    }
+
     self.drawstack:clear(0, 0)
         :stack(bar)
         :within(
@@ -76,12 +93,6 @@ function charbar:rebuild()
     if self.icon then
         self.drawstack:with(self.icon, "icon")
     end
-
-    local label_opt = {
-        align="left",
-        valign="center",
-        font = font(12)
-    }
 
     self.drawstack
         :with(overlay, "icon")
@@ -128,8 +139,85 @@ function charbar:rebuild()
     return self
 end
 
+function charbar:build_layout()
+    local layout = {}
+
+
+
+    layout.icon = spatial(0, 0, 20, 20):scale(2, 2)
+
+    local label = spatial(0, 0, 32, 6):scale(2, 2)
+    local bar = spatial(0, 0, 64, 3):scale(2, 2)
+
+    layout.name = layout.icon
+        :align(layout.icon, "left/left", "top/bottom")
+        :move(0, 6)
+
+    layout.hp_bar = bar
+        :align(layout.icon, "left/right", "top/top")
+        :move(8, 8)
+
+    layout.stamina_bar = bar
+        :align(layout.icon, "left/right", "bottom/bottom")
+        :move(8, -8)
+
+    layout.hp_label = label
+        :align(layout.hp_bar, "left/left", "bottom/top")
+        :move(0, -6)
+    layout.hp_value = layout.hp_label:right()
+
+    layout.stamina_label = label
+        :align(layout.stamina_bar, "left/left", "top/bottom")
+        :move(0, 6)
+    layout.stamina_value = layout.stamina_label:right()
+
+    layout.bound = layout.icon
+        :join(layout.hp_value, layout.stamina_value)
+        :compile()
+        :expand(25, 15)
+
+    return layout
+end
+
+local label_opt = {
+    align="left",
+    valign="center",
+    font = font(12),
+    color = {
+        normal = {
+            fg = {1.0, 1.0, 1.0}
+        }
+    }
+}
+
 function charbar:__draw(x, y)
-    self.drawstack:draw(x, y)
+    --self.drawstack:draw(x, y + 100)
+    gfx.setColor(0, 0, 0.2, 0.3)
+    gfx.rectangle(
+        "fill", self.layout.bound.x, self.layout.bound.y,
+        self.layout.bound.w, self.layout.bound.h, 10
+    )
+
+    gfx.setColor(1, 1, 1)
+    self.icon:draw(self.layout.icon.x, self.layout.icon.y, 0, 2, 2)
+    gfx.setColor(1, 1, 1, 0.8)
+    gfx.rectangle("line", self.layout.icon:unpack())
+
+    suit.theme.Label(
+        self.hp.str.str, self.hp.str, self.layout.hp_value:unpack()
+    )
+    suit.theme.Label(
+        "Health", label_opt, self.layout.hp_label:unpack()
+    )
+    uibar(self.hp.bar, self.layout.hp_bar:unpack())
+
+    suit.theme.Label(
+        self.stamina.str.str, self.hp.str, self.layout.stamina_value:unpack()
+    )
+    suit.theme.Label(
+        "Stamina", label_opt, self.layout.stamina_label:unpack()
+    )
+    uibar(self.stamina.bar, self.layout.stamina_bar:unpack())
 end
 
 return charbar

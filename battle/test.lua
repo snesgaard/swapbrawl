@@ -1,9 +1,9 @@
 local battle = {}
 
 function battle.args()
-    local party = {"fencer", "vampire"}
+    local party = {"fencer", "vampire", "alchemist"}
 
-    local foes = {"vampire", "fencer"}
+    local foes = {"vampire", "fencer", "alchemist"}
     return party, foes
 end
 

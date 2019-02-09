@@ -122,6 +122,27 @@ function ui:create()
     self._layout = dict()
 
     self._action_queue = self:child(action_queue)
+
+    self._mesh = ui.create_mesh()
+end
+
+function ui.create_mesh()
+    local startpoint = get_spatial(-1)
+    local endpoint = get_spatial(12)
+    local curve = love.math.newBezierCurve(
+        startpoint.x + 200, startpoint.y,
+        startpoint.x, startpoint.y,
+        startpoint.x, startpoint.y,
+        startpoint.x, startpoint.y,
+        startpoint.x, startpoint.y,
+        endpoint.x, endpoint.y,
+        endpoint.x, endpoint.y,
+        endpoint.x, endpoint.y,
+        endpoint.x + 200, endpoint.y
+    )
+    curve:translate(-25, 0)
+
+    return curve:render(3)
 end
 
 function ui:register_icon(id, icon)
@@ -169,10 +190,21 @@ local function draw_icon(icon, spatial)
 end
 
 function ui:__draw(x, y)
+    -- TODO all this bezier should jsut be calculate once
+    gfx.setColor(0, 0, 0.2, 0.3)
+
+    gfx.polygon("fill", self._mesh)
     for id, spatial in pairs(self._layout) do
         local icon = self._icons[id]
         draw_icon(icon, spatial)
+        --gfx.rectangle("line", spatial.x, spatial.y, 40, 40, 2)
     end
+
+    gfx.setColor(1, 1, 1, 0.6)
+    for id, spatial in pairs(self._layout) do
+        gfx.rectangle("line", spatial.x, spatial.y, 40, 40, 2)
+    end
+    gfx.setLineWidth(1)
 end
 
 return ui

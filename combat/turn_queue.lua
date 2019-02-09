@@ -12,18 +12,19 @@ local function _reorder(delays)
     local order = delays
         :keys()
         :sort(function(a, b)
-            return delays[a] > delays[b]
+            return delays[a] < delays[b]
         end)
 
     return order
 end
 
 local function _normalize(_delays, order)
-    if #_delays == 0 or #order == 0 then
+    print("normalize", _delays, order)
+    if #order == 0 then
         return _delays
     end
 
-    local min_delay = _delays[order:head()]
+    local min_delay = _delays[order:head()] or 0
     if min_delay <= 0 then
         return _delays
     end
@@ -40,10 +41,8 @@ local function _future_index(order, delays, id, agility, delay)
         error("Delay must be set!")
     end
 
-    delay = _get_delay(id, agility, delay)
-
     local next_index = order:argfind(function(key)
-        return delays[key] > delay
+        return delays[key] >= delay
     end)
 
     -- If we did not find anything assume last place
@@ -60,6 +59,7 @@ function queue.create(_delays, _order, _action)
     )
     this._order = _order or _reorder(this._delays)
     this._action = _action or dict()
+    this._bias = dict()
     return setmetatable(this, queue)
 end
 
@@ -83,7 +83,9 @@ function queue:advance(id, agility, delay, action)
     _order = cur_index and self._order:erase(cur_index) or self._order
     -- Get future index
     local index = _future_index(_order, self._delays, id, agility, delay)
-    print(index, _order)
+    print(index, delay, id)
+    print(_order)
+    print(self._delays)
     return queue.create(
         self._delays:set(id, delay), _order:insert(id, index),
         self._action:set(id, action)

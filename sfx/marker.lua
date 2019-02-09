@@ -80,14 +80,14 @@ function marker:mass_draw(...)
         gfx.setColor(unpack(c))
         gfx.circle("fill", x, y, self.outer_radius)
         gfx.ellipse("fill", x, y, self.ellipse_radius, INNER_RADIUS * 0.75)
-        gfx.setColor(1, 1, 1, 1)
+        gfx.setColor(1, 1, 1, 0.5)
         gfx.circle("fill", x, y, self.inner_radius)
 
         return __do_draw(self.secondary_color, ...)
     end
 
     gfx.setColor(1, 1, 1)
-    self.blur.draw(__do_draw, self.secondary_color, ...)
+    self.blur.draw(__do_draw, self.primary_color, ...)
 end
 
 return marker

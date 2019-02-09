@@ -26,6 +26,37 @@ function love.load(arg)
         reload(f:gsub('.lua', ''))
         reload_scene()
     end
+
+    --[[
+    local cross = root:child(require "ui.action_cross")
+
+    cross.__transform.pos = vec2(500, 150)
+
+    local keys = {
+        up = "W",
+        down = "S",
+        left = "A",
+        right = "D"
+    }
+
+    local name = {
+        up = "Magick",
+        left = "Attack",
+        right = "Defend",
+        down = "Item"
+    }
+
+    local icons = {
+        left = "attack_bw",
+        up = "magick_bw",
+        down = "item_bw",
+        right = "defend_bw"
+    }
+
+    cross:set_keys(keys)
+    cross:set_texts(name)
+    cross:set_icons(icons)
+    ]]--
 end
 
 function love.update(dt)
@@ -35,5 +66,9 @@ function love.update(dt)
 end
 
 function love.draw()
+    gfx.setColor(0.5, 0.5, 0.5)
+    gfx.rectangle("fill", 0, 0, gfx.getWidth(), gfx.getHeight())
     root:draw(0, 0)
+
+    --stack:draw(0, 0)
 end

@@ -21,7 +21,8 @@ end
 function fencer.basestats()
     return {
         health = 10,
-        stamina = 100
+        stamina = 100,
+        agility = 4,
     }
 end
 

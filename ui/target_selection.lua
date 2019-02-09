@@ -59,6 +59,8 @@ function node:keypressed(key)
         self:change_target(1)
     elseif key == "tab" then
         self:swap_faction()
+    elseif key == "space" and self.on_select then
+        self.on_select(self:get_current())
     end
 end
 
@@ -89,8 +91,6 @@ function node:swap_faction()
     else
         self:change_target(foes:head())
     end
-
-    --self:_setup_visuals()
 end
 
 function node:change_target(arg)
