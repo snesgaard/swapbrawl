@@ -16,10 +16,12 @@ function queue:create()
 end
 
 function queue:submit(f, ...)
-    self.__queue[#self.__queue + 1] = {f, ...}
+    local bundle = {f, ...}
+    self.__queue[#self.__queue + 1] = bundle
     if not self.__active_handler then
         self.__active_handler = self:fork(self.handle)
     end
+    return bundle
 end
 
 function queue:handle()

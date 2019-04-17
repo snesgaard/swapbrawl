@@ -49,7 +49,14 @@ function node:create(ids, state, user, secondary_ids)
 end
 
 function node:get_current()
-    return self.ids:head(), self.secondary_ids(self.ids:head())
+    local s = self.secondary_ids(
+        self.state, self.ids:head(), self.ids:erase(1)
+    )
+    if type(s) == "table" then
+        return self.ids:head(), unpack(s)
+    else
+        return self.ids:head(), s
+    end
 end
 
 function node:keypressed(key)

@@ -3,7 +3,7 @@ local actor = {}
 local animations = {}
 
 function animations.idle(sprite, dt)
-    sprite:loop(dt, "alchemist_idle")
+    sprite:loop(dt, "vampress_idle")
 end
 
 function actor.sprite()
@@ -11,14 +11,14 @@ function actor.sprite()
 end
 
 function actor.icon()
-    return get_atlas("art/icons"):get_animation("alchemist")
+    return get_atlas("art/icons"):get_animation("vampress")
 end
 
 function actor.basestats()
     return {
-        health = 15,
+        health = 10,
         stamina = 100,
-        agility = 2
+        agility = 3
     }
 end
 

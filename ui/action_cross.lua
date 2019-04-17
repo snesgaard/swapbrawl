@@ -213,6 +213,11 @@ function node:__update(dt)
     self.particles:update(dt)
 end
 
+function node:set_selection(key)
+    self._selection = key
+    return self
+end
+
 function node:__draw(x, y)
     gfx.setColor(1, 1, 1)
     for key, s in pairs(self.layout.key) do
@@ -235,14 +240,15 @@ function node:__draw(x, y)
     gfx.rectangle("fill", self.layout.bound.total:unpack())
     gfx.setStencilTest()
 
-    --[[
-    gfx.setColor(1, 1, 1)
-    gfx.setBlendMode("add", "alphamultiply")
-    self.blur(function()
-        gfx.draw(self.particles, x + self.layout.icon.up.x + 16, y + self.layout.icon.up.y + 16)
-    end)
-    gfx.setBlendMode("alpha")
-    ]]--
+    if self._selection and self.layout.icon[self._selection] then
+        gfx.setColor(1, 1, 1)
+        gfx.setBlendMode("add", "alphamultiply")
+        local s = self.layout.icon[self._selection]
+        self.blur(function()
+            gfx.draw(self.particles, x + s.x + 16, y + s.y + 16)
+        end)
+        gfx.setBlendMode("alpha")
+    end
 
     for key, text in pairs(self._keys or {}) do
         local s = self.layout.key[key]

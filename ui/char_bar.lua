@@ -199,7 +199,9 @@ function charbar:__draw(x, y)
     )
 
     gfx.setColor(1, 1, 1)
-    self.icon:draw(self.layout.icon.x, self.layout.icon.y, 0, 2, 2)
+    if self.icon then
+        self.icon:draw(self.layout.icon.x, self.layout.icon.y, 0, 2, 2)
+    end
     gfx.setColor(1, 1, 1, 0.8)
     gfx.rectangle("line", self.layout.icon:unpack())
 

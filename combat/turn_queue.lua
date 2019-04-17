@@ -19,7 +19,6 @@ local function _reorder(delays)
 end
 
 local function _normalize(_delays, order)
-    print("normalize", _delays, order)
     if #order == 0 then
         return _delays
     end
@@ -83,9 +82,6 @@ function queue:advance(id, agility, delay, action)
     _order = cur_index and self._order:erase(cur_index) or self._order
     -- Get future index
     local index = _future_index(_order, self._delays, id, agility, delay)
-    print(index, delay, id)
-    print(_order)
-    print(self._delays)
     return queue.create(
         self._delays:set(id, delay), _order:insert(id, index),
         self._action:set(id, action)

@@ -183,7 +183,7 @@ end
 local function draw_icon(icon, spatial)
     gfx.setColor(1, 1, 1)
     if not icon then
-        gfx.rectangle("fill", spatial:unpack())
+        gfx.rectangle("fill", spatial.x, spatial.y, 40, 40)
     else
         icon:draw(spatial.x, spatial.y, 0, 2, 2)
     end

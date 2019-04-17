@@ -72,3 +72,20 @@ The following are hidden behind the scenes:
   # Combat manager
     More a framework than anything else. Handles things like damage calculations.
     Also notifies
+
+
+# Banes
+
+  * Stun -- Skip next turn
+  * Confuse -- Random action
+  * Poison -- Damage for each turn
+  * Bleed -- Increased damage pr hit
+  * Curse -- Double stamina cost
+  * Blind -- Miss next attack
+
+# Boons
+
+  * Charge -- 2.5 effect next attack
+  * Strengthen -- Increased damage pr hit
+  * Shield -- Ignored next attack
+  * Regen -- Healing on each turn

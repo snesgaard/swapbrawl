@@ -10,6 +10,7 @@ state = require "combat.state"
 
 function love.load(arg)
     -- SET A BATTLE AS DEFALT
+    gfx.setBackgroundColor(0, 0, 0, 0)
     arg = list(unpack(arg))
 
     local old_load = love.load
@@ -21,7 +22,9 @@ function love.load(arg)
     local entrymap = {
         node = "designer/node",
         ui = "designer/ui",
-        battle = "designer/battle"
+        battle = "designer/battle",
+        sprite = "designer/sprite",
+        ability = "designer/ability"
     }
 
     entry = entrymap[entry]
