@@ -2,8 +2,21 @@ local actor = {}
 
 local animations = {}
 
-function animations.idle(sprite, dt)
+function animations.idle(sprite, dt, prev)
+    if prev == animations.cast then
+        sprite:play(dt, "alchemist_item/cast2idle")
+    end
     sprite:loop(dt, "alchemist_idle")
+end
+
+function animations.cast(sprite, dt, prev)
+    sprite:play(dt, "alchemist_item/cast")
+    sprite:loop(dt, "alchemist_item/post_cast")
+end
+
+function animations.chant(sprite, dt, prev)
+    sprite:play(dt, "alchemist_item/idle2chant")
+    sprite:loop(dt, "alchemist_item/chant")
 end
 
 function actor.sprite()

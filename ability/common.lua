@@ -8,6 +8,7 @@ function common.wait_for_hitbox(handle, topic, name, timeout)
         return
     end
     local hitboxes = event_args[1]
+    print(hitboxes)
     local dt = love.timer.getTime() - pre
     if not hitboxes[name] then
         return common.wait_for_hitbox(handle, topic, name, timeout - dt)

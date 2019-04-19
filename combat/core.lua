@@ -38,7 +38,8 @@ local function setup_stat_gfx(ui, state, index, id, type)
         :set_icon(typedata.icon and typedata.icon())
         :set_hp(state:health(id))
         :set_stamina(state:stamina(id))
-    c.__transform.pos = vec2(100 + (index - 1) * 250, 700)
+    --c.__transform.pos = vec2(100 + (index - 1) * 250, 700)
+    c.__transform.pos = vec2(100, 625 + (index - 1) * 80)
     ui.char_bars[id] = c
 end
 
@@ -75,6 +76,7 @@ end
 function initialize.setup_battle(context, party, foes)
     context.sprites = context:child()
     context.sprites:set_order(sprite_order)
+    context.sfx = context:child()
     context.ui = context:child()
     context.ui.turn = context.ui:child(ui.turn_queue)
     context.ui.turn.__transform.pos = vec2(gfx.getWidth() - 100, 15)
@@ -144,7 +146,16 @@ local function find_epoch_handler(context, ability, epoch)
     return a or f
 end
 
+function execute_action.post_action(context, id)
+    local state = context.state
+    --Resolve poison
+    local ailments = require "combat.ailments"
+    return ailments.update(state, id)
+end
+
 function execute_action.execute(context, id, ability, ...)
+    -- TODO This functions hould probably be split into two parts
+    -- One that resolves the data and one that resovles teh animations
     local targets = list(...)
     local args = dict{
         target = #targets > 1 and targets or targets[1],
@@ -160,6 +171,12 @@ function execute_action.execute(context, id, ability, ...)
         end, context.state
     )
 
+    local post_history = execute_action.post_action(context, id)
+    -- TODO Might need rewriting if changed to EPIC format
+    if #post_history > 0 then
+        context.state = post_history:tail().state
+    end
+
     -- TODO: Cache for making sure that every history has been resolved
     local function resolve(history, ...)
         if not history then return end
@@ -172,18 +189,27 @@ function execute_action.execute(context, id, ability, ...)
         return resolve(...)
     end
 
+    local turn_queue = context.turn_queue
+
     local function action(handle, context)
+        context.ui.turn:advance(turn_queue)
         context.sprites[id].priority = 1
         context.sprites:__make_order()
         ability.animate(handle, context, epic, args, resolve)
         context.sprites[id].priority = nil
         context.sprites:__make_order()
+
+        resolve(post_history)
     end
 
     return context.anime_queue:submit(action, context)
 end
 
 function execute_action.enter(fsm, context, level, id, ability, ...)
+    context.turn_queue = context.turn_queue:advance(
+        id, context.state:agility(), 10
+    )
+
     function context.anime_queue.on_handle_end()
         fsm:swap(advance_turn, id, ability)
     end
@@ -192,10 +218,6 @@ function execute_action.enter(fsm, context, level, id, ability, ...)
 end
 
 function advance_turn.enter(fsm, context, level, id, ability)
-    context.turn_queue = context.turn_queue:advance(
-        id, context.state:agility(), 10
-    )
-    context.ui.turn:advance(context.turn_queue)
     return fsm:swap(pick_action)
 end
 

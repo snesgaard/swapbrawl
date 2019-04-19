@@ -43,9 +43,11 @@ function love.load(arg)
 
     local ability = require(ability_path:gsub('.lua', ''))
 
+    local user_type = ability.__user_type and ability.__user_type() or "fencer"
+
     core.initialize.setup_battle(
         nodes.battle,
-        {"fencer", "vampire", "vampress"},
+        {user_type, "vampire", "vampress"},
         {"mage", "alchemist"}
     )
 

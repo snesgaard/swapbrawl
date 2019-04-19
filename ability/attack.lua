@@ -6,7 +6,11 @@ local ability = {}
 function ability.execute(state, args)
     return mech.execute(
         state,
-        "damage", mech.damage, dict{target=args.target, damage=2}
+        "damage", mech.damage, dict{target=args.target, damage=2},
+        "poison", mech.ailment_damage, dict{
+            target=args.target, damage=2, ailment="poison"
+        },
+        "the_truth", mech.true_damage, dict{target=args.target, damage=3}
     )
 end
 
@@ -58,7 +62,7 @@ function ability.animate(handle, context, epic, args, resolve)
     local attack_hitbox = common.wait_for_hitbox(
         handle, sprite_user.on_hitbox, "attack", 1.0
     )
-    resolve(epic.damage)
+    resolve(unpack(epic))
     local s = sprite_target:child(sfx("slash"))
     s.__transform.pos.y = -50
 

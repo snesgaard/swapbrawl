@@ -32,7 +32,6 @@ function love.load(arg)
     end
     function lurker.postswap(f)
         reload_scene()
-        reload(f)
     end
 
     dress = suit.new()
@@ -46,6 +45,7 @@ local slider_state = {value=75, min=0, max=100, step=20}
 function love.update(dt)
    --dress:Input(input, dress.layout:row())
    nodes:update(dt)
+   lurker:update(dt)
 end
 
 function love.draw()

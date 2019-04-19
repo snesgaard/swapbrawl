@@ -101,6 +101,19 @@ function queue:remove(id)
     end
 end
 
+function queue:promote(id, action)
+    local next_action = self._action:set(id, action)
+    local index = self._order:argfind(id)
+    local next_order = self._order
+    if index then
+        next_order = next_order:erase(index)
+    end
+    next_order = next_order:insert(id, 1)
+    local next_delay = self._delays:set(id, 0)
+
+    return queue.create(next_delay, next_order, next_action)
+end
+
 function queue:next()
     local id = self._order:head()
     return id, self._action[id]

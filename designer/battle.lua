@@ -1,6 +1,8 @@
 function love.load(arg)
     root = Node.create()
     root.sfx = root:child()
+    root.hand = root:child(require "ui.card_hand")
+    root.__transform.pos = vec2(330, 600)
 
     --gfx.setBackgroundColor(0.2, 0.3, 0.4, 0)
 
@@ -10,6 +12,7 @@ function love.load(arg)
 
     function root.keypressed(...)
         stack:keypressed(...)
+        root.hand:keypressed(...)
     end
 
     function lurker.preswap(f)

@@ -46,6 +46,21 @@ function state.create(root)
         },
         event = dict{
 
+        },
+        ailment = dict{
+            poison = dict{},
+        },
+        card = dict{
+            master = dict{},
+            icon = dict{},
+            text = dict{},
+            data = dict{},
+            ability = dict{},
+        },
+        deck = dict{
+            draw = list(),
+            hand = list(),
+            discard = list(),
         }
     }
 
@@ -57,6 +72,11 @@ function state.create(root)
         for _, d in pairs(this.root.event) do
             d.order = list()
             d.func = dict()
+        end
+        for _, d in pairs(this.root.ailment) do
+            d.resistance = dict()
+            d.damage = dict()
+            d.duration = dict()
         end
     end
     return setmetatable(this, state)

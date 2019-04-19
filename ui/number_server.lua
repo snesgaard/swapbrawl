@@ -109,6 +109,12 @@ function DamageNumberServer:damage(pos, info)
     end
 end
 
+function DamageNumberServer:heal(pos, info)
+    local heal = info.heal
+
+    self:number(heal, pos.x, pos.y, "heal")
+end
+
 function DamageNumberServer:number(number, x, y, type)
     number = Node.create(DamageNumber, number, self, type)
     --number = DamageNumber.create(number, self, type)

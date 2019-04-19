@@ -89,3 +89,8 @@ The following are hidden behind the scenes:
   * Strengthen -- Increased damage pr hit
   * Shield -- Ignored next attack
   * Regen -- Healing on each turn
+
+# Controls
+  - Define player control FSM
+  - Define interaction between battle FSM
+  - WRite turn queue promotion method
