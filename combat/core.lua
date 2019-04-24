@@ -65,9 +65,11 @@ end
 local states = {}
 
 local initialize = {}
+local next_action = {}
 local pick_action = {}
+local wait_for_ui = {}
+local run_script = {}
 local execute_action = {}
-local advance_turn = {}
 
 local function sprite_order(a, b)
     return (a.priority or 0) < (b.priority or 0)
@@ -123,20 +125,32 @@ end
 
 function initialize.enter(fsm, context, level, party, foes)
     initialize.setup_battle(context, party, foes)
-
-    return fsm:swap(states.pick_action)
+    --return fsm:swap(next_action)
 end
 
-
-function pick_action.enter(fsm, context, level)
-    local id = context.turn_queue:next()
-    local p = require "combat.player_turn"
-    level.id = id
-    fsm:push(p.pick_action, id)
+function initialize.begin(fsm, context, level, player_stack)
+    context.player_stack = player_stack
+    return fsm:swap(next_action)
 end
 
-function pick_action.poped(fsm, context, level, ability, ...)
-    return fsm:swap(execute_action, level.id, ability, ...)
+function next_action.enter(fsm, context, level)
+    local id, action = context.turn_queue:next()
+    -- TODO CHeck if actually valid actor: Alive, not stunned etc
+    if not action or action.type == "ui" then
+        return fsm:swap(wait_for_ui, id, action)
+    elseif action.type == "script" then
+        return fsm:swap(script_action, id, action)
+    end
+end
+
+function wait_for_ui.enter(fsm, context, level, id, action)
+    context.player_stack:invoke(
+        "on_next_turn", id, context.state
+    )
+end
+
+function wait_for_ui.on_action_select(fsm, context, level, id, action, ...)
+    return fsm:swap(id, action, ...)
 end
 
 local function find_epoch_handler(context, ability, epoch)
@@ -206,19 +220,16 @@ function execute_action.execute(context, id, ability, ...)
 end
 
 function execute_action.enter(fsm, context, level, id, ability, ...)
+    -- TODO Update with actual ability delay here
     context.turn_queue = context.turn_queue:advance(
         id, context.state:agility(), 10
     )
 
     function context.anime_queue.on_handle_end()
-        fsm:swap(advance_turn, id, ability)
+        fsm:swap(next_action)
     end
 
     execute_action.execute(context, id, ability, ...)
-end
-
-function advance_turn.enter(fsm, context, level, id, ability)
-    return fsm:swap(pick_action)
 end
 
 states.initialize = initialize

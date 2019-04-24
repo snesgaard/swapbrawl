@@ -66,25 +66,34 @@ function card:create()
             1, 1, 0.7, 0.4,
             0.2, 0.2, 1, 0,
         },
+        size = {1, 1, 1, 0},
         speed = {1, 30}
     }
 end
 
-function card:highlight(do_it)
+function card:highlight(do_it, green)
     self.highlighted = do_it
     return self
 end
 
+function card:green(green)
+    self.__green = green
+    return self
+end
+
 function card:__draw(x, y)
-    gfx.setColor(1, 1, 1)
     if self.highlighted then
+        if self.__green then
+            gfx.setColor(0.1, 1, 0.2)
+        end
         gfx.setBlendMode("add")
-        self.blur.draw(function()
-            gfx.draw(self.particles, x + self.shape.w, y + self.shape.h)
-        end)
+        --self.blur.draw(function()
+            --gfx.draw(self.particles, x + self.shape.w, y + self.shape.h)
+        --end)
         gfx.setBlendMode("alpha")
     end
 
+    gfx.setColor(1, 1, 1)
     self.stack:draw(x, y)
 end
 

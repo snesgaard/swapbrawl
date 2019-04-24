@@ -13,6 +13,9 @@ function hand:create()
     for i = 1, 10 do
         self:insert_card()
     end
+    local _, _, w, h = self.cards:head().shape:unpack()
+    self.__select_sfx = Node.create(require "sfx.card_select", w, h)
+
     self.activated = true
     self:select(1)
     self:build_structure()
@@ -25,20 +28,41 @@ function hand:select(index)
     if self.selected then
         local obj = self.cards[self.selected]
         obj:highlight(false)
+        --obj.adopt(self.__select_sfx)
     end
 
     if index then
         index = math.cycle(index, 1, #self.cards)
         local obj = self.cards[index]
         obj:highlight(true)
+        obj:adopt(self.__select_sfx)
     end
 
     self.selected = index
     self:__make_order()
 end
 
+function hand:trigger()
+    if self.__select_sfx then
+        self.__select_sfx:trigger()
+    end
+    return self
+end
+
+function hand:fallback()
+    if self.__select_sfx then
+        self.__select_sfx:fallback()
+    end
+    return self
+end
+
 function hand:insert_card()
-    self.cards = self.cards:insert(self:child(card))
+    local c = self:child(card)
+    function c:__draworder(x, y, ...)
+        self:__childdraw(0, 0)
+        self:__draw(0, 0, ...)
+    end
+    self.cards = self.cards:insert(c)
 end
 
 function hand:remove_card(index)
@@ -51,15 +75,28 @@ function hand:build_structure()
     end
 end
 
-function hand:keypressed(key)
-    if not self.activated then return end
-    if key == "right" and self.activated then
-        self:select(self.selected + 1)
-    elseif key == "left" and self.activated then
-        self:select(self.selected - 1)
-    elseif key == "space" then
-        self.on_select(self.selected)
+function hand:highlight(doit)
+    local obj = self.cards[self.selected]
+    if not doit then
+        obj:highlight(false)
+        self.__select_sfx:orphan()
+    elseif obj then
+        obj:highlight(true)
+        obj:adopt(self.__select_sfx)
     end
+    self:__make_order()
+end
+
+function hand:left()
+    return self:select(self.selected - 1)
+end
+
+function hand:right()
+    return self:select(self.selected + 1)
+end
+
+function hand:current()
+    return self.selected
 end
 
 function hand:activate(do_it)
