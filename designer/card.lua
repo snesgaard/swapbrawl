@@ -1,3 +1,6 @@
+local state = require "combat.state"
+local deck = require "combat.deck"
+
 function reload(p)
     package.loaded[p] = nil
     return require(p)
@@ -5,15 +8,19 @@ end
 
 function love.load(arg)
     nodes = Node.create()
-    --gfx.setBackgroundColor(0.2, 0.3, 0.4, 1)
-    gfx.setBackgroundColor(0, 0, 0, 0)
+    nodes.state = state()
+    gfx.setBackgroundColor(0.2, 0.3, 0.4, 1)
 
     settings = {origin = false}
 
     local function creation(path)
         local p = path:gsub('.lua', '')
+        local card = require "ui.card"
         local t = reload(p)
-        return nodes:child(t)
+
+        nodes.state, cardid = deck.create(nodes.state, t)
+
+        return nodes:child(card, nodes.state, cardid)
     end
 
     for _, path in ipairs(arg) do
@@ -50,10 +57,7 @@ function love.update(dt)
 end
 
 function love.draw()
-    local w, h = gfx.getWidth(), gfx.getHeight()
-    gfx.setColor(0.2, 0.3, 0.4, 1)
-    gfx.rectangle("fill", 0, 0, w, h)
-    nodes:draw(w / 2, h / 2)
+    nodes:draw(gfx.getWidth() / 2, gfx.getHeight() / 2)
     gfx.setColor(1, 1, 1)
     dress:draw()
 end

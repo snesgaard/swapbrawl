@@ -11,7 +11,8 @@ end
 function potion.execute(state, args)
     return mech.execute(
         state,
-        "heal", mech.heal, dict{target=args.target, heal=5}
+        "heal", mech.heal, dict{target=args.target, heal=5},
+        "draw", deck.draw, dict{target=args.target, draw=1}
     )
 end
 

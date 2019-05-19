@@ -17,7 +17,7 @@ end
 function actor.basestats()
     return {
         health = 20,
-        stamina = 100
+        --stamina = 100
     }
 end
 

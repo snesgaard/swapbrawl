@@ -1,7 +1,51 @@
+local function get_image(card, state, id)
+    if not card then
+        return "awaken", "art/props"
+    end
+
+    if type(card.image) == "string" then
+        return card.image, "art/props"
+    elseif type(card.image) == "table" then
+        local im, atlas = unpack(card.image)
+        return im, atlas or "art/props"
+    elseif type(card.image) == "function" then
+        -- TODO Pass state here
+        local im, atlas = card:image(state, id)
+        return im, atlas or "art/props"
+    else
+        log.warn("Unsupported image type <%>", type(card.image))
+    end
+end
+
+local function get_text(card, state, id)
+    local default_text = "No text"
+    if not card then return default_text end
+    local c = card
+    local text = type(c.text) == "function" and c:text(state, id) or c.text
+    return text or default_text
+end
+
+local function get_name(card, state, id)
+    local default_text = "Undefined"
+    if not card then return default_text end
+    local c = card
+    local text = type(c.name) == "function" and c:text(state, id) or c.name
+    return text or default_text
+end
+
+local function get_type(state, id)
+    if not state or not id then return end
+    return state:read("card/type/" .. id)
+end
+
 local card = {}
 
-function card:create()
-    local atlas = get_atlas("art/props")
+function card:create(state, id)
+    local card = get_type(state, id)
+    local im, atlas = get_image(card, state, id)
+    local text = get_text(card, state, id)
+    local name = get_name(card, state, id)
+    local atlas = get_atlas(atlas or "art/props")
     self.shape = spatial(atlas:get_animation("card").quad:getViewport())
     self.shape = self.shape
     self.stack = DrawStack.create()
@@ -11,12 +55,12 @@ function card:create()
             function(x, y, w, h)
                 gfx.setColor(0, 0, 0, 0.55)
                 gfx.setFont(font(18))
-                gfx.printf("Awaken", x, y, w, "center")
+                gfx.printf(name, x, y, w, "center")
             end,
             "name"
         )
         :with(
-            atlas:get_animation("awaken"),
+            atlas:get_animation(im),
             "image"
         )
         :within(
@@ -34,7 +78,7 @@ function card:create()
             function(x, y, w, h)
                 gfx.setFont(font(11))
                 gfx.setColor(0, 0, 0)
-                local text = "Gain charge, shield and empower.\nReduce health to 1."
+                --local text = "Deal minor damage and bleed."
                 gfx.printf(
                     text, x + 5, y + 5, w - 10
                 )

@@ -1,4 +1,5 @@
 local core = require "combat.core"
+deck = require "combat.deck"
 
 local function default_pick_user(state)
     return state:position()
@@ -37,7 +38,7 @@ end
 function love.load(arg)
     gfx.setBackgroundColor(0, 0, 0, 0)
     nodes = Node.create()
-    nodes.battle = nodes:child()
+    nodes.battle = nodes:child(core)
 
     local ability_path = arg[1]
 
@@ -45,10 +46,13 @@ function love.load(arg)
 
     local user_type = ability.__user_type and ability.__user_type() or "fencer"
 
-    core.initialize.setup_battle(
-        nodes.battle,
-        {user_type, "vampire", "vampress"},
-        {"mage", "alchemist"}
+    function actor(t)
+        return {type = t}
+    end
+
+    nodes.battle:setup_battle(
+        list(user_type, "vampire", "vampress"):map(actor),
+        list("mage", "alchemist"):map(actor)
     )
 
     local state = nodes.battle.state
@@ -69,11 +73,11 @@ function love.load(arg)
     )
 
     if type(s) == "table" then
-        core.execute_action.execute(
-            nodes.battle, user, ability, target, unpack(s)
+        nodes.battle:execute(
+            user, ability, target, unpack(s)
         )
     else
-        core.execute_action.execute(nodes.battle, user, ability, target, s)
+        nodes.battle:execute(user, ability, target, s)
     end
 end
 

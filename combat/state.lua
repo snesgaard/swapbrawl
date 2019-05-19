@@ -34,6 +34,8 @@ function state.create(root)
             max_stamina = dict{},
             agility = dict{},
             type = dict{},
+            charge = dict{},
+            shield = dict{}
         },
         position = dict{
             -- Convention : abs(1-3) is frontline. abs(3-) is reserve
@@ -48,19 +50,17 @@ function state.create(root)
 
         },
         ailment = dict{
-            poison = dict{},
+            poison = dict{}, burn=dict{}
         },
         card = dict{
             master = dict{},
-            icon = dict{},
-            text = dict{},
-            data = dict{},
+            type = dict{},
             ability = dict{},
         },
         deck = dict{
-            draw = list(),
-            hand = list(),
-            discard = list(),
+            draw = dict(),
+            hand = dict(),
+            discard = dict(),
         }
     }
 

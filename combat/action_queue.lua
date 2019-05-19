@@ -18,6 +18,7 @@ end
 function queue:submit(f, ...)
     local bundle = {f, ...}
     self.__queue[#self.__queue + 1] = bundle
+
     if not self.__active_handler then
         self.__active_handler = self:fork(self.handle)
     end
@@ -25,6 +26,7 @@ function queue:submit(f, ...)
 end
 
 function queue:handle()
+    self:wait_update()
     if self.on_handle_begin then
         self.on_handle_begin(self.__queue)
     end

@@ -6,6 +6,21 @@ local mech = {}
 
 mech.make_epoch = make_epoch
 
+function mech.invoke_echo(state, args, echo_path, history)
+    history = history or list()
+    local echo = state:read(echo_path) or {}
+
+    local info
+    -- Reactions goes here
+    for i, id in ipairs(echo) do
+        local f = echo.func[id]
+        args, info, state = f(state, id, args)
+        history[#history + 1] = make_epoch(id, state, info)
+    end
+
+    return state, history
+end
+
 function mech.make_history(...)
     return list(make_epoch(...))
 end
@@ -57,6 +72,36 @@ function mech.identity(id, state, info)
     return mech.make_history(id, state, info)
 end
 
+function mech.stamina_heal(state, args)
+    local on_stamina_heal = state:read("echo/on_stamina_heal") or {}
+
+    local history = list()
+    local info = {}
+
+    if not args.no_echo then
+        for i, id in ipairs(on_stamina_heal.order or {}) do
+            local f = on_stamina_heal.func[id]
+            args, info, state = f(state, id, args)
+            history[#history + 1] = make_epoch(id, state, info)
+        end
+    end
+
+    local stamina = state:read("actor/stamina/" .. args.target)
+    local max_stamina = state:read("actor/max_stamina/" .. args.target)
+
+    local actual_heal = math.min(max_stamina - stamina, args.heal)
+    local next_stamina = stamina + actual_heal
+    local next_state = state:write(
+        "actor/stamina/" .. args.target, next_stamina
+    )
+    local info = {
+        heal = actual_heal, target = args.target,
+        stamina = next_stamina
+    }
+    history[#history + 1] = mech.make_epoch("stamina_healed", next_state, info)
+    return history
+end
+
 function mech.heal(state, args)
     local on_heal = state:read("echo/on_heal") or {}
 
@@ -73,7 +118,7 @@ function mech.heal(state, args)
     local max_health = state:read("actor/max_health/" .. args.target)
     local actual_heal = math.min(max_health - health, args.heal)
     local next_health = health + actual_heal
-    local next_state = state:write("actor/health/")
+    local next_state = state:write("actor/health/" .. args.target, next_health)
     local info = {
         heal = actual_heal, target = args.target,
         health = next_health
@@ -83,6 +128,9 @@ function mech.heal(state, args)
 end
 
 function mech.damage(state, args)
+    if not args.user then
+        error("There must be a user defined!")
+    end
     -- TODO perform initial stat calculation here
     args = args:set("real_damage", args.damage)
 
@@ -99,14 +147,24 @@ function mech.damage(state, args)
 
     -- Final state damage calculation
 
+    local charged = state:read("actor/charge/" .. args.user)
+    local shielded = state:read("actor/shield/" .. args.target)
+
     local health = state:read("actor/health/" .. args.target)
     local actual_damage = math.min(health, args.real_damage)
+    actual_damage = charged and actual_damage * 2 or actual_damage
+    actual_damage = shielded and actual_damage * 0 or actual_damage
     local next_health = health - actual_damage
+
     local info = {
         damage = actual_damage, target = args.target,
-        health = next_health
+        charged = charged, shielded = shielded,
+        health = next_health,
+        user = args.user
     }
     state = state:write("actor/health/" .. args.target, next_health)
+    state = state:write("actor/shield/" .. args.target, false)
+    state = state:write("actor/charge/" .. args.user, false)
 
     history[#history + 1] = make_epoch("damage_dealt", state, info)
 
@@ -180,6 +238,50 @@ function mech.ailment_damage(state, args)
 
     -- Insert reactions after this
     return history
+end
+
+function mech.charge(state, args)
+    args.charge = args.charge or true
+    local state, history = mech.invoke_echo(state, args, "echo/on_charge")
+
+    local charge = state:read("actor/charge/" .. args.target)
+    local next_state = state:write("actor/charge/" .. args.target, args.charge)
+
+    local info = {
+        target = args.target,
+        charged = not charge and args.charge,
+        removed = charge and not args.charge
+    }
+
+    history[#history + 1] = make_epoch("charged", next_state, info)
+
+    return history
+end
+
+function mech.shield(state, args)
+    args.shield = args.shield or true
+    local state, history = mech.invoke_echo(state, args, "echo/on_shield")
+
+    local shield = state:read("actor/shield/" .. args.target)
+    local next_state = state:write("actor/shield/" .. args.target, args.shield)
+
+    local info = {
+        target = args.target,
+        shielded = not shield and args.shield,
+        removed = shield and not args.shield
+    }
+
+    history[#history + 1] = make_epoch("shielded", next_state, info)
+
+    return history
+end
+
+function mech.tail_state(epic, state)
+    return epic[#epic]:reduce(
+        function(a, b)
+            return b.state or a
+        end, state
+    )
 end
 
 return mech

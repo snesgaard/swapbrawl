@@ -1,7 +1,6 @@
 local projectile = {}
 
 function projectile.ballistic(node, h, travel_time, stop_pos)
-    print(stop_pos, node.__transform.pos)
     local xtween = timer.tween(
         travel_time,
         {

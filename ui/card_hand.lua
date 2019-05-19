@@ -1,4 +1,5 @@
 local card = require "ui.card"
+local state = require "combat.state"
 
 local function sort_cards(a, b)
     local ax = a.highlighted and 10000 or a.__transform.pos.x
@@ -8,38 +9,186 @@ end
 
 local hand = {}
 
+function hand:test()
+    local state = state()
+    self:select(1)
+    self:insert(state, "1", "2", "3")
+end
+
 function hand:create()
     self.cards = list()
-    for i = 1, 10 do
-        self:insert_card()
-    end
-    local _, _, w, h = self.cards:head().shape:unpack()
-    self.__select_sfx = Node.create(require "sfx.card_select", w, h)
-
-    self.activated = true
-    self:select(1)
-    self:build_structure()
     self:set_order(sort_cards)
-    self.on_select = event()
-    self:__make_order()
+    self.cardids = dict()
+    self.anime_queue = self:child(require "combat.action_queue")
+end
+
+function hand:insert(state, ...)
+    local ids = list(...)
+    local nodes = ids:map(
+        function(id)
+            local c = self:child(card, state, id)
+            function c:__draworder(x, y, ...)
+                self:__childdraw(0, 0)
+                self:__draw(0, 0, ...)
+            end
+            c.__transform.pos.x = 2000
+            return c
+        end
+    )
+
+    for i, n in ipairs(nodes) do
+        local id = ids[i]
+        n.__transform.pos.x = n.__transform.pos.x + i
+        self.cardids[n] = id
+        self.cardids[id] = n
+    end
+
+    if #nodes <= 0 then return end
+
+    local cards = self.cards + nodes
+    self.cards = cards
+
+    if not self.__select_sfx then
+        local _, _, w, h = self.cards:head().shape:unpack()
+        self.__select_sfx = Node.create(require "sfx.card_select", w, h)
+    end
+
+    local function action(handle)
+        local structure = self.build_structure(cards)
+        local tween_table = {}
+        self:__make_order()
+        for i, node in ipairs(cards) do
+            tween_table[node.__transform.pos] = structure[i]
+        end
+        local tween = timer.tween(0.25, tween_table)
+        self:wait(tween)
+    end
+
+    self:select(self.selected)
+
+    self.anime_queue:submit(action)
+end
+
+function hand:clear()
+    local indices = {}
+    for i, _ in ipairs(self.cards) do
+        indices[#indices + 1] = i
+    end
+
+    return self:remove(unpack(indices))
+end
+
+function hand:remove(...)
+    local function arg2indices(arg)
+        if type(arg) == "string" then
+            local obj = self.cardids[arg]
+            return self.cards:argfind(obj)
+        elseif type(arg) == "table" then
+            return self.cards:argfind(arg)
+        else
+            return arg
+        end
+    end
+
+    local function get_tween_node(indices, nodes)
+        local cards = self.cards
+        for _, i in ipairs(indices:sort():reverse()) do
+            cards = cards:erase(i)
+        end
+
+        local structure = self.build_structure(cards)
+
+        local tween_table = {}
+        for i, card in ipairs(cards) do
+            tween_table[card.__transform.pos] = structure[i]
+        end
+
+        for i, node in ipairs(nodes) do
+            local index = indices[i]
+            local end_pos = hand.card_pos(index) - vec2(0, 100)
+            tween_table[node.__transform.pos] = end_pos
+        end
+
+        return tween_table, cards
+    end
+
+    local indices = list(...)
+        :map(arg2indices)
+        :filter(function(index) return self.cards[index] end)
+
+    local nodes = indices
+        :map(function(index) return self.cards[index] end)
+
+
+    if not #indices then return end
+
+    local tween_table, cards = get_tween_node(indices, nodes)
+
+    local s = self.selected
+
+    local index = self.cards:argfind(s)
+
+    self:select()
+
+    self.cards = cards
+    for _, n in ipairs(nodes) do
+        local id = self.cardids[n]
+        self.cardids[n] = nil
+        self.cardids[id] = nil
+    end
+
+    self:select(index)
+
+    -- Remove from lookup table
+
+    local function action(handle)
+        local tween = timer.tween(0.25, tween_table)
+        handle:wait(tween)
+        for _, n in ipairs(nodes) do
+            n:destroy()
+        end
+    end
+
+    self.anime_queue:submit(action)
 end
 
 function hand:select(index)
+    local function get_obj()
+        if not index then return end
+        if type(index) == "number" then
+            return self.cards[index]
+        elseif type(index) == "string" then
+            return self.cardids[index]
+        else
+            return index
+        end
+    end
+
+    local next_obj = get_obj()
+
     if self.selected then
-        local obj = self.cards[self.selected]
-        obj:highlight(false)
-        --obj.adopt(self.__select_sfx)
+        self.selected:highlight(false)
     end
 
-    if index then
-        index = math.cycle(index, 1, #self.cards)
-        local obj = self.cards[index]
-        obj:highlight(true)
-        obj:adopt(self.__select_sfx)
+    if self.__select_sfx then
+        if next_obj then
+            next_obj:highlight(true)
+            next_obj:adopt(self.__select_sfx)
+        else
+            self.__select_sfx:orphan()
+        end
     end
 
-    self.selected = index
+    self.selected = next_obj
     self:__make_order()
+end
+
+function hand:is_present(index)
+    if type(index) == "number" then
+        return self.cards[index]
+    elseif type(index) == "string" then
+        return self.cardids[index]
+    end
 end
 
 function hand:trigger()
@@ -69,21 +218,33 @@ function hand:remove_card(index)
 
 end
 
-function hand:build_structure()
-    for i, card in ipairs(self.cards) do
-        card.__transform.pos.x = 120 * (i - 1)
+function hand.card_pos(index)
+    return vec2(120 * (index - 1), 0)
+end
+
+function hand.build_structure(cards)
+    local pos = {}
+    for i, card in ipairs(cards) do
+        pos[i] = hand.card_pos(i)
     end
+    return pos
 end
 
 function hand:highlight(doit)
-    local obj = self.cards[self.selected]
+    local obj = self.cards[self.selected or 1]
+
     if not doit then
-        obj:highlight(false)
-        self.__select_sfx:orphan()
-    elseif obj then
+        if obj then
+            obj:highlight(false)
+        end
+        if self.__select_sfx then
+            self.__select_sfx:orphan()
+        end
+    else
         obj:highlight(true)
         obj:adopt(self.__select_sfx)
     end
+    self.highlighted = doit
     self:__make_order()
 end
 

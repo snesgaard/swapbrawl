@@ -4,7 +4,10 @@ local animations = {}
 
 local offset = {}
 
-function animations.idle(sprite, dt)
+function animations.idle(sprite, dt, prev_state)
+    if prev_state == animations.use then
+        sprite:play(dt, "fencer_attack/item2idle")
+    end
     sprite:loop(dt, "fencer_idle")
 end
 
@@ -21,6 +24,11 @@ function animations.attack(sprite, dt)
     sprite:loop(dt, "fencer_attack/post_attack")
 end
 
+function animations.use(sprite, dt)
+    sprite:play(dt, "fencer_attack/item_use")
+    sprite:loop(dt, "fencer_attack/post_item")
+end
+
 offset.attack = "fencer_attack/attack"
 
 function fencer.sprite()
@@ -34,7 +42,7 @@ end
 function fencer.basestats()
     return {
         health = 10,
-        stamina = 100,
+        --stamina = 100,
         agility = 4,
     }
 end

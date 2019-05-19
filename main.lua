@@ -1,3 +1,4 @@
+--require("lovedebug")
 require "nodeworks"
 
 actor = require "actor"
@@ -24,7 +25,9 @@ function love.load(arg)
         ui = "designer/ui",
         battle = "designer/battle",
         sprite = "designer/sprite",
-        ability = "designer/ability"
+        ability = "designer/ability",
+        card = "designer/card",
+        cards = "designer/card",
     }
 
     entry = entrymap[entry]

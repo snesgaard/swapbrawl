@@ -11,10 +11,10 @@ function love.load(arg)
     end
 
     function root.keypressed(...)
-        core_stack:keypressed(...)
-        player_stack:keypressed(...)
+        root.player_control:keypressed(...)
     end
 
+    --[[
     function lurker.preswap(f)
         f = f:gsub('.lua', '')
         package.loaded[f] = nil
@@ -23,21 +23,40 @@ function love.load(arg)
         reload(f:gsub('.lua', ''))
         reload_scene()
     end
+    ]]--
 
-    core_stack = Stack.create()
 
-    player_stack = Stack.create()
+    root.core = root:child(require "combat.core")
+    root.player_control = Stack.create()
+    root.player_control:push(require "combat.player_control")
+
+    function root.player_control.submit_action(user, ability, targets)
+        return root.core:execute(user, ability, unpack(targets))
+    end
+    function root.player_control.play_card(...)
+        return root.core:play_card(...)
+    end
+
+    root.core.on_epoch:listen(function(...)
+        root.player_control:invoke("on_epoch", ...)
+    end)
+
+    function root.core.on_player_turn(state, id)
+        root.player_control:invoke("on_next_turn", state, id)
+    end
+
+    --player_stack = Stack.create()
 
     local p = arg:head()
     if p then
         local f = require(p:gsub('.lua', ''))
-        local c = require "combat.core"
-        core_stack:push(c.initialize, f.args())
+        root.core:setup_battle(f.args())
 
-        player_stack:push(require "combat.player_control")
-        
-        player_stack:invoke("begin", core_stack)
-        core_stack:invoke("begin", player_stack)
+        root.core:next_turn()
+        --player_stack:push(require "combat.player_control")
+
+        --player_stack:invoke("begin", core_stack)
+        --core_stack:invoke("begin", player_stack)
     end
 end
 
@@ -45,14 +64,12 @@ function love.update(dt)
     lurker:update()
     root:update(dt)
     timer.update(dt)
-    core_stack:update(dt)
-    player_stack:update(dt)
+    root.player_control:update(dt)
 end
 
 function love.draw()
     gfx.setColor(0.5, 0.5, 0.5)
     gfx.rectangle("fill", 0, 0, gfx.getWidth(), gfx.getHeight())
     root:draw(0, 0)
-    core_stack:draw(0, 0)
-    player_stack:draw(0, 0)
+    root.player_control:draw(0, 0)
 end

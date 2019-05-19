@@ -79,9 +79,9 @@ function ailments.update_gfx(context, state, info)
 end
 
 function ailments.damage_gfx(context, state, info)
-    if info.success then
+    if info.success and info.ailment ~= "burn" then
         local sprite = context.sprites[info.target]
-        local sfx = sfx("ailment/" .. info.ailment)
+        local sfx = sfx("ailment." .. info.ailment)
         local key = sprite_key(info.ailment)
         if sprite and not sprite[key] then
             sprite[key] = sprite:child(sfx)
