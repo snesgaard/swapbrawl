@@ -3,7 +3,7 @@ local deck = require "combat.deck"
 local card = {}
 
 card.image = "tri_potion_green"
-card.text = "+10 Health"
+card.text = "+10 Health\n\nDiscard hand"
 card.name = "Potion"
 
 function card.execute(state, args)

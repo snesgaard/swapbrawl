@@ -199,6 +199,7 @@ function target.exit(fsm, context, level)
 end
 
 function submit.find_select(prev_hand, next_hand, prev_select)
+    -- BUG When you discard and redraw a card from hand!!
     print(prev_hand, next_hand)
     -- Search backwards
     for i = prev_select - 1, 1, -1 do

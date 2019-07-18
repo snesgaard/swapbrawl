@@ -31,41 +31,13 @@ function marker:life()
         }
     end
 
-    self:wait(
-        timer.tween(
-            0.1,
-            {
-                [self] = tween_target(1.5)
-            }
-        )
-    )
+    self:wait(tween(0.1, self, tween_target(1.5)))
 
-    self:wait(
-        timer.tween(
-            0.1,
-            {
-                [self] = tween_target(1.0)
-            }
-        )
-    )
+    self:wait(tween(0.1, self, tween_target(1.0)))
 
     while true do
-        self:wait(
-            timer.tween(
-                1.0,
-                {
-                    [self] = tween_target(0.8)
-                }
-            )
-        )
-        self:wait(
-            timer.tween(
-                0.25,
-                {
-                    [self] = tween_target(1.0)
-                }
-            )
-        )
+        self:wait(tween(1.0, self, tween_target(0.8)))
+        self:wait(tween(0.25, self, tween_target(1.0)))
     end
 end
 

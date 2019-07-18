@@ -49,21 +49,13 @@ function slash:__draw(x, y)
 end
 
 function slash:life()
-    local t = 0.125
-    local tween = timer.tween(
-        t,
-        {
-            [self] = {width = 3, hpos = 0}
-        }
+    local time = 0.125
+    local t = tween(time, self, {width = 3, hpos = 0})
+    self:wait(t)
+    local t = tween(
+        time, self, {width = 0, hpos = self.length - self.hlength}
     )
-    self:wait(tween)
-    local tween = timer.tween(
-        t,
-        {
-            [self] = {width = 0, hpos = self.length - self.hlength}
-        }
-    )
-    self:wait(tween)
+    self:wait(t)
     self.on_finish()
     self:destroy()
 end

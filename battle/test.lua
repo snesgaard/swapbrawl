@@ -11,7 +11,7 @@ local function default_deck()
     return list(
         "lost_soul", "lost_soul","lost_soul","lost_soul","lost_soul",
         "potion", "potion","potion","potion","potion",
-        "potion", "potion","potion","potion","potion"
+        "blaze_edge", "blaze_edge","blaze_edge","blaze_edge","blaze_edge"
     )
 end
 

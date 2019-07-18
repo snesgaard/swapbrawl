@@ -18,7 +18,18 @@ function card.execute(state, args)
 end
 
 function card.animate(handle, context, epic, args, resolve)
-    local function on_hit(handle)
+    local function on_hit(handle, area, data)
+        local sfx = context.sfx:child(require "sfx.flame_slash")
+        sfx.__transform.pos = area:center()
+
+        if data.user.__transform.pos.x > data.target.__transform.pos.x then
+            sfx.__transform.scale.x = -1
+        end
+
+        local sfx = Node.create(require "sfx.ailment.stun")
+        data.target:adopt(sfx)
+        sfx:on_attach(data.target)
+
         resolve(unpack(epic))
         handle:wait(0.4)
     end

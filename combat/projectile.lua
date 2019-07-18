@@ -1,31 +1,22 @@
 local projectile = {}
 
 function projectile.ballistic(node, h, travel_time, stop_pos)
-    local xtween = timer.tween(
-        travel_time,
-        {
-            [node.__transform.pos] = {x = stop_pos.x},
-        }
+    local xtween = tween(
+        travel_time, node.__transform.pos, {x = stop_pos.x}
     )
-    local atween = timer.tween(
-        travel_time,
-        {
-            [node.__transform] = {angle = math.pi * 2}
-        }
-    )
-        :ease(ease.inQuad)
-    local ytween = timer.tween(
-        travel_time,
-        {
-            [node.__transform.pos] = {y = stop_pos.y}
-        }
-    )
-        :ease(function(t, init, dy, time)
-            a = -h * 4.0 + 2 * dy
-            b = h * 4.0 - dy
-            t = t / time
-            return a * t * t + b * t + init
-        end)
+
+    local atween = tween(
+        travel_time, node.__transform, {angle = math.pi * 2}
+    ):ease(ease.inQuad)
+
+    local ytween = tween(
+        travel_time, node.__transform.pos, {y = stop_pos.y}
+    ):ease(function(t, init, dy, time)
+        a = -h * 4.0 + 2 * dy
+        b = h * 4.0 - dy
+        t = t / time
+        return a * t * t + b * t + init
+    end)
 
     return xtween, ytween, atween
 end

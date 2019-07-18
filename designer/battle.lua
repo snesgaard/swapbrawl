@@ -25,8 +25,9 @@ function love.load(arg)
     end
     ]]--
 
-
+    print("entering", require "combat.core")
     root.core = root:child(require "combat.core")
+    print("her")
     root.player_control = Stack.create()
     root.player_control:push(require "combat.player_control")
 
@@ -63,7 +64,8 @@ end
 function love.update(dt)
     lurker:update()
     root:update(dt)
-    timer.update(dt)
+    --timer.update(dt)
+    tween.update(dt)
     root.player_control:update(dt)
 end
 

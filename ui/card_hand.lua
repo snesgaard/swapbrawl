@@ -13,6 +13,7 @@ function hand:test()
     local state = state()
     self:select(1)
     self:insert(state, "1", "2", "3")
+    self:remove("2")
 end
 
 function hand:create()
@@ -58,9 +59,10 @@ function hand:insert(state, ...)
         local tween_table = {}
         self:__make_order()
         for i, node in ipairs(cards) do
-            tween_table[node.__transform.pos] = structure[i]
+            tween_table[#tween_table + 1] = node.__transform.pos
+            tween_table[#tween_table + 1] = structure[i]
         end
-        local tween = timer.tween(0.25, tween_table)
+        local tween = tween(0.25, unpack(tween_table))
         self:wait(tween)
     end
 
@@ -100,13 +102,17 @@ function hand:remove(...)
 
         local tween_table = {}
         for i, card in ipairs(cards) do
-            tween_table[card.__transform.pos] = structure[i]
+            --tween_table[card.__transform.pos] = structure[i]
+            tween_table[#tween_table + 1] = card.__transform.pos
+            tween_table[#tween_table + 1] = structure[i]
         end
 
         for i, node in ipairs(nodes) do
             local index = indices[i]
             local end_pos = hand.card_pos(index) - vec2(0, 100)
-            tween_table[node.__transform.pos] = end_pos
+            --tween_table[node.__transform.pos] = end_pos
+            tween_table[#tween_table + 1] = node.__transform.pos
+            tween_table[#tween_table + 1] = end_pos
         end
 
         return tween_table, cards
@@ -142,7 +148,7 @@ function hand:remove(...)
     -- Remove from lookup table
 
     local function action(handle)
-        local tween = timer.tween(0.25, tween_table)
+        local tween = tween(0.25, unpack(tween_table))
         handle:wait(tween)
         for _, n in ipairs(nodes) do
             n:destroy()

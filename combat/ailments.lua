@@ -79,13 +79,16 @@ function ailments.update_gfx(context, state, info)
 end
 
 function ailments.damage_gfx(context, state, info)
-    if info.success and info.ailment ~= "burn" then
+    if info.success then
         local sprite = context.sprites[info.target]
         local sfx = sfx("ailment." .. info.ailment)
         local key = sprite_key(info.ailment)
         if sprite and not sprite[key] then
             sprite[key] = sprite:child(sfx)
-            sprite[key].__transform.pos.y = -sprite:height()
+            if sprite[key].on_attach then sprite[key]:on_attach(sprite) end
+            if info.ailment == "poison" then
+                sprite[key].__transform.pos.y = -sprite:height()
+            end
         end
     end
 end

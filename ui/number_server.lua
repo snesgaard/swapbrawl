@@ -40,19 +40,33 @@ function DamageNumber:create(number, master, type)
     self:fork(DamageNumber.animate)
 end
 
-function DamageNumber.animate(self)
+function DamageNumber.animate(self)--
+    --[[
     local tween = timer.tween(0.15, {
         [self.opt.color.normal.fg] = {[4] = 1},
         [self] = {scale = self.end_scale}
     })
-    self:wait(tween)
+    ]]--
+    local num_tween = tween(
+        0.15,
+        self.opt.color.normal.fg, {[4] = 1},
+        self, {scale = self.end_scale}
+    )
+    self:wait(num_tween)
     self:wait(1)
     local spatial = self.spatial
+    --[[
     tween = timer.tween(0.25, {
         [self.opt.color.normal.fg] = {[4] = 0},
         [self.spatial] = spatial:move(0, -50)
     })
-    self:wait(tween)
+    ]]--
+    num_tween = tween(
+        0.25,
+        self.opt.color.normal.fg, {[4] = 0},
+        self.spatial, spatial:move(0, -50)
+    )
+    self:wait(num_tween)
     self:remove()
 end
 

@@ -45,6 +45,7 @@ local slider_state = {value=75, min=0, max=100, step=20}
 
 function love.update(dt)
    --dress:Input(input, dress.layout:row())
+   tween.update(dt)
    nodes:update(dt)
    lurker:update(dt)
 end
@@ -53,6 +54,7 @@ function love.draw()
     local w, h = gfx.getWidth(), gfx.getHeight()
     gfx.setColor(0.2, 0.3, 0.4, 1)
     gfx.rectangle("fill", 0, 0, w, h)
+    gfx.setColor(1, 1, 1)
     nodes:draw(w / 2, h / 2)
     gfx.setColor(1, 1, 1)
     dress:draw()

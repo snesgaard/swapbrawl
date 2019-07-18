@@ -47,15 +47,12 @@ function ability.animate(handle, context, epic, args, resolve)
 
     local speed = 1200.0
     local time = (attack_pos - pos_user):length() / speed
-    local tween = timer.tween(
-        math.abs(time),
-        {
-            [sprite_user.__transform.pos] = attack_pos
-        }
+    local t = tween(
+        math.abs(time), sprite_user.__transform.pos, attack_pos
     ):ease(ease.inOutQuad)
     sprite_user:set_animation("dash")
 
-    handle:wait(tween)
+    handle:wait(t)
 
     sprite_user:set_animation("attack")
 
@@ -70,14 +67,11 @@ function ability.animate(handle, context, epic, args, resolve)
 
     sprite_user:set_animation("evade")
 
-    local tween = timer.tween(
-        math.abs(time),
-        {
-            [sprite_user.__transform.pos] = pos_user
-        }
+    local t = timer.tween(
+        math.abs(time), sprite_user.__transform.pos, pos_user
     ):ease(ease.inOutQuad)
 
-    handle:wait(tween)
+    handle:wait(t)
 
     sprite_user:set_animation("idle")
 end

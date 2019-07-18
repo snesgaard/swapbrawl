@@ -82,7 +82,7 @@ function love.load(arg)
 end
 
 function love.update(dt)
-    timer.update(dt)
+    tween.update(dt)
     nodes:update(dt)
 end
 

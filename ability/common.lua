@@ -53,38 +53,33 @@ function common.melee_attack(
 
     local speed = opt.speed or 1200.0
     local time = (attack_pos - pos_user):length() / speed
-    local tween = timer.tween(
-        math.abs(time),
-        {
-            [sprite_user.__transform.pos] = attack_pos
-        }
+    local t = tween(
+        math.abs(time), sprite_user.__transform.pos, attack_pos
     ):ease(ease.inOutQuad)
     sprite_user:set_animation("dash")
 
-    handle:wait(tween)
+    handle:wait(t)
 
     sprite_user:set_animation("attack")
 
     local attack_hitbox = common.wait_for_hitbox(
         handle, sprite_user.on_hitbox, "attack", 1.0
     )
+    print(attack_hitbox)
 
     on_hit(
         handle, attack_hitbox,
-        {user = sprite_user, target = sprite_target},
+        {user = sprite_user, target = sprite_target, context = context, state},
         opt
     )
 
     sprite_user:set_animation("evade")
 
-    local tween = timer.tween(
-        math.abs(time),
-        {
-            [sprite_user.__transform.pos] = pos_user
-        }
+    local t = tween(
+        math.abs(time), sprite_user.__transform.pos, pos_user
     ):ease(ease.inOutQuad)
 
-    handle:wait(tween)
+    handle:wait(t)
 
     sprite_user:set_animation("idle")
     handle:wait(0.1)

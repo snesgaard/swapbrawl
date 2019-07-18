@@ -12,12 +12,10 @@ function flash:create(shape, color)
 end
 
 function flash:life()
-    local t = timer.tween(
-        0.2, {
-            [self.rect] = self.rect * 7,
-            [self.scale] = vec2(2, 0),
-            [self.color] = {[4] = 0}
-        }
+    local t = tween(0.2,
+            self.rect, self.rect * 7,
+            self.scale, vec2(2, 0),
+            self.color, {[4] = 0}
     ):ease(ease.inOutQuad)
     self:wait(t)
     self:destroy()

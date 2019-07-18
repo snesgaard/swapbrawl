@@ -42,24 +42,14 @@ function shield:__update(dt)
 end
 
 function shield:life()
-    local tween = timer.tween(
-        0.3,
-        {
-            [self.radius] = self.final_radius
-        }
-    ):ease(ease.outBounce)
-    self:wait(tween)
+    local t = tween(0.3, self.radius, self.final_radius):ease(ease.outBounce)
+    self:wait(t)
     if not self.is_halted then
         self:wait(self.on_halt)
     end
     self.border_particles:stop()
-    local tween = timer.tween(
-        0.1,
-        {
-            [self.radius] = {x = 0, y = 0}
-        }
-    )
-    self:wait(tween)
+    local t = tween(0.1, self.radius, {x = 0, y = 0})
+    self:wait(t)
     while self.border_particles:getCount() > 0 do
         self:wait_update()
     end

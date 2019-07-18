@@ -38,7 +38,8 @@ end
 function love.update(dt)
     lurker:update()
     nodes:update(dt)
-    timer.update(dt)
+    --timer.update(dt)
+    tween.update(dt)
 end
 
 function love.draw()
