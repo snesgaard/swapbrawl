@@ -37,4 +37,6 @@ function love.keypressed(key, scancode, isrepeat)
     if root and root.keypressed then
         root:invoke("keypressed", key, scancode, isrepeat)
     end
+
+    event("keypressed", key, scancode, isrepeat)
 end
