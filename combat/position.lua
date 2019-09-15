@@ -1,11 +1,11 @@
 local position = {}
 
 local function get_default_center()
-    return vec2(gfx.getWidth() / 2, gfx.getHeight() / 2 + 100)
+    return vec2(gfx.getWidth() / 2, gfx.getHeight() / 2 + 100) * 0.5
 end
 
 local function get_default_offset()
-    return vec2(135, 0)
+    return vec2(135, 0) * 0.5
 end
 
 function position.is_party(state, arg)

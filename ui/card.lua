@@ -63,10 +63,10 @@ function card:create(state, id)
             atlas:get_animation(im),
             "image"
         )
-        :within(
-            draw_holder,
-            "image"
-        )
+        --:within(
+        --    draw_holder,
+        --    "image"
+        --)
         :within(
             function(x, y, w, h)
                 gfx.setColor(0.7, 0.8, 0.8)
@@ -85,10 +85,10 @@ function card:create(state, id)
             end,
             "text"
         )
-        :within(
-            draw_holder,
-            "text"
-        )
+        --:within(
+        --    draw_holder,
+        --    "text"
+        --)
 
     self.blur = moon(moon.effects.gaussianblur)
     self.blur.sigma = 3

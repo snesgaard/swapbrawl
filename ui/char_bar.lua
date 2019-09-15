@@ -222,4 +222,9 @@ function charbar:__draw(x, y)
     uibar(self.stamina.bar, self.layout.stamina_bar:unpack())
 end
 
+function charbar:position(index)
+    self.__transform.pos = vec2(100, gfx.getHeight() - 100 * index)
+    return self
+end
+
 return charbar

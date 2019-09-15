@@ -1,210 +1,194 @@
-local function get_default_params()
-    return {
-        margin = vec2(5, 5),
-        size = vec2(40, 40),
-    }
+local function printf(text, space, align, valign, ...)
+    local font = gfx.getFont()
+    local fh = font:getHeight()
+    local x, y, w, h = space:unpack()
+    if valign == "center" then
+        y = y + (h - fh) / 2
+    elseif valign == "bottom" then
+        y = y + h - fh - 2
+    end
+    gfx.printf(text, x, y, w, align, ...)
 end
 
-local function get_rel_motion(prev_order, next_order)
-    local from = dict()
-    local to = dict()
-    local all = dict()
+local turn_queue = {}
 
-    for index, id in ipairs(prev_order._order) do
-        from[id] = index
-        all[id] = true
-    end
+function turn_queue:create()
+    self._spatials = dict()
+    self._offset = dict()
+    self._color = color.create()
+    self._order = list()
+    self._color_stack = colorstack()
+    self._icon = dict()
+    self._action = list()
 
-    for index, id in ipairs(next_order._order) do
-        to[id] = index
-        all[id] = true
-    end
+    self.ICON_SIZE = vec2(20, 20) * 2
+    self.ICON_MARGIN = vec2(4, 4)
+    self.ACTION_SIZE = vec2(200, self.ICON_SIZE.y)
+    self.BG_COLOR = color.create()
+    self.MARGIN = vec2(7, 7)
+    self.INTRO_DELAY = 0.1
+    self.INTRO_DUR = 0.5
 
-    return from, to, all
+    self._server = self:child(action_queue)
 end
 
-local function get_spatial(index, params)
-    params = params or get_default_params()
-    local margin = params.margin
-    local size = params.size
-    return vec2(
-        margin.x * (index - 1),
-        (size.y + margin.y) * (index - 1)
+function turn_queue:test()
+    self:appear(list("foo", "bar", "baz"))
+    self:push("yes1")
+    self:push("yes2")
+    self:push("yes3")
+    self:push("yes4")
+    self:pop()
+end
+
+function turn_queue:icon(id, texture, quad)
+
+end
+
+local function push(server, self, action)
+    local function get_id()
+        for i = #self._order, 1, -1 do
+            local id = self._order[i]
+            if not self._action[id] then return id end
+        end
+    end
+    local id = get_id()
+    if not id then return end
+    local barid = self:bar_id(id)
+    local s = self._spatials[self:icon_id(id)]
+    s = s:right(self.MARGIN.x, 0, self.ACTION_SIZE.x)
+
+    self._action[id] = action
+    self._offset[barid] = vec2(0, -1000)
+    self._spatials[barid] = s
+
+    local t = tween(self.INTRO_DUR, self._offset[barid], vec2())
+    event:wait(t, "finish")
+end
+
+function turn_queue:push(action)
+    self._server:add(push, self, action)
+end
+
+local function pop(server, self)
+    local id = self._order:head()
+    if not id then return end
+
+    local iconid = self:icon_id(id)
+    local t = tween(
+        self.INTRO_DUR,
+        self._offset[iconid], vec2(500, 0),
+        self._color[id], {[4]=0}
     )
+    event:wait(t, "finish")
+    self._action[id] = nil
+    self._order = self._order:body()
 end
 
-local function motion_tween(from, to, params)
-    -- TODO
-    -- There should be some conditional here checking for upwards or downwards
-    -- motion
-    local from_pos = get_spatial(from, params)
-    local to_pos = get_spatial(to, params)
-    if from >= to then
-        return function(s)
-            return ease.linear(s, from_pos, to_pos - from_pos, 1)
-        end
-    else
-        local p0 = from_pos
-        local p1 = from_pos - vec2(50, 0)
-        local p2 = to_pos - vec2(50, 0)
-        local p3 = to_pos
-        return function(s)
-            if s < 0.15 then
-                return ease.linear(s, p0, p1 - p0, 0.15)
-            elseif s > 0.85 then
-                return ease.linear(
-                    s - 0.85, p2, p3 - p2, 0.15
-                )
-            else
-                return ease.linear(
-                    s - 0.15,
-                    p1,
-                    p2 - p1,
-                    0.7
-                )
-            end
-        end
-    end
+function turn_queue:pop()
+    self._server:add(pop, self)
 end
 
-local function leave_tween(from, params)
-    from = get_spatial(from, params)
-    local to = from + vec2(400, 0)
-    -- MOVE offset screen
-    return function(s)
-        return ease.linear(s, from, vec2(400, 0), 1)
-    end
+function turn_queue:icon_id(id)
+    return join(id, "icon")
 end
 
-local function enter_tween(to, params)
-    to = get_spatial(to, params)
-    local from = to + vec2(400, 0)
-    return function(s)
-        return ease.linear(s, from, to - from, 1)
-    end
+function turn_queue:bar_id(id)
+    return join(id, "bar")
 end
 
-local function get_tween(from, to, params)
-    if from and to then
-        return motion_tween(from, to, params)
-    elseif from and not to then
-        return leave_tween(from, params)
-    elseif not from and to then
-        return enter_tween(to, params)
-    else
-        log.warn('Got nil from and to')
-    end
-end
-
-local function get_next_tweens(prev_order, next_order)
-    local from, to, all = get_rel_motion(prev_order, next_order)
-
-    local tween_table = {}
-    local layout = dict()
-    for id, _ in pairs(all) do
-        local tween_func = get_tween(from[id], to[id])
-        tween_table[id] = tween_func
-        layout[id] = tween_func(0)
-    end
-
-    return layout, tween_table
-end
-
-local action_queue = require("combat.action_queue")
-local turn_queue = require("combat.turn_queue")
-
-local ui = {}
-
-function ui:create()
-    self._icons = dict()
-    self._turn_order = turn_queue.create()
-    self._turn_icons = dict()
-    self._layout = dict()
-
-    self._action_queue = self:child(action_queue)
-
-    self._mesh = ui.create_mesh()
-end
-
-function ui.create_mesh()
-    local startpoint = get_spatial(-1)
-    local endpoint = get_spatial(12)
-    local curve = love.math.newBezierCurve(
-        startpoint.x + 200, startpoint.y,
-        startpoint.x, startpoint.y,
-        startpoint.x, startpoint.y,
-        startpoint.x, startpoint.y,
-        startpoint.x, startpoint.y,
-        endpoint.x, endpoint.y,
-        endpoint.x, endpoint.y,
-        endpoint.x, endpoint.y,
-        endpoint.x + 200, endpoint.y
+local function appear(server, self, order)
+    self._order = order
+    local s = spatial(
+        0, 0, (self.ICON_SIZE + self.ICON_MARGIN):unpack()
     )
-    curve:translate(-25, 0)
+    for _, id in pairs(order) do
+        local icon = self:icon_id(id)
+        self._spatials[icon] = s
+        self._offset[icon] = vec2(500, 0)
+        self._action[id] = nil
+        self._color[id] = color.create(1, 1, 1, 0)
+        s = s:down(0, self.MARGIN.y)
+    end
 
-    return curve:render(3)
+    local function intro(server, id, iconid, delay)
+        event:sleep(delay)
+        local t = tween(
+            self.INTRO_DUR,
+            self._offset[iconid], vec2(),
+            self._color[id], {[4]=1}
+        )
+        event:wait(t, "finish")
+        event(server, "appear_done", iconid)
+    end
+
+    for i, id in ipairs(order) do
+        server:fork(intro, id, self:icon_id(id), self.INTRO_DELAY * i)
+    end
+
+    for i, id in ipairs(order) do
+        print("got event", event:wait(server, "appear_done"))
+    end
 end
 
-function ui:register_icon(id, icon)
-    self._icons[id] = icon
+local function hide(server, self)
+    local function do_hiding(server, iconid, delay)
+        event:sleep(delay)
+        local t = tween(self.INTRO_DUR, self._offset[iconid], vec2(500, 0))
+        event:wait(t, "finish")
+        event(server, "hide_done")
+    end
+
+    for i, id in ipairs(self._order) do
+        server:fork(do_hiding, self:icon_id(id), self.INTRO_DELAY * i)
+    end
+
+    for _, id in ipairs(self._order) do
+        event:wait(server, "hide_done")
+    end
 end
 
-function ui:setup(turn_order)
-
+function turn_queue:appear(order)
+    self._server:add(appear, self, order)
 end
 
-function ui:advance(next_turn_order)
-    local layout, tween_table = get_next_tweens(
-        self._turn_order, next_turn_order
+function turn_queue:hide()
+    self._server:add(hide, self)
+end
+
+function turn_queue:_draw_icon(id, space, color_stack, icon)
+    color_stack:push()
+    gfx.rectangle("fill", space:unpack())
+    color_stack:map(dot, color.create(0.5, 0.5, 0.5, 0.5))
+    local line_width = self.ICON_MARGIN.x
+    gfx.setLineWidth(line_width)
+    gfx.rectangle(
+        "line", space:expand(-line_width, -line_width):unpack()
     )
-    self._turn_order = next_turn_order
-    self._action_queue:submit(function(handle)
-        self._layout = layout
-        local duration = 0.4
-        local time = duration -- duration
-        while time > 0 do
-            local dt = handle:wait_update()
-            time = time - dt
-            for id, func in pairs(tween_table) do
-                self._layout[id] = func(1 - time / duration)
-            end
+    color_stack:pop()
+end
+
+function turn_queue:__draw(x, y)
+    for _, id in pairs(self._order) do
+        local iconid = self:icon_id(id)
+        local barid = self:bar_id(id)
+        local text = self._action[id]
+
+        self._color_stack:clear()
+        self._color_stack:map(dot, self._color[id])
+        gfx.push()
+        gfx.translate(self._offset[iconid]:unpack())
+        --gfx.rectangle("fill", self._spatials[iconid]:unpack())
+        self:_draw_icon(id, self._spatials[iconid], self._color_stack)
+        if text then
+            gfx.translate(self._offset[barid]:unpack())
+            gfx.rectangle("fill", self._spatials[barid]:unpack())
+            gfx.setColor(0, 0, 0)
+            gfx.setFont(font(20))
+            printf(text, self._spatials[barid], "center", "center")
         end
-        -- Final pass for final layout
-        for id, func in pairs(tween_table) do
-            self._layout[id] = func(1)
-        end
-    end)
-end
-
-function ui:show_next_turn()
-
-end
-
-local function draw_icon(icon, spatial)
-    gfx.setColor(1, 1, 1)
-    if not icon then
-        gfx.rectangle("fill", spatial.x, spatial.y, 40, 40)
-    else
-        icon:draw(spatial.x, spatial.y, 0, 2, 2)
+        gfx.pop()
     end
 end
 
-function ui:__draw(x, y)
-    -- TODO all this bezier should jsut be calculate once
-    gfx.setColor(0, 0, 0.2, 0.3)
-
-    gfx.polygon("fill", self._mesh)
-    for id, spatial in pairs(self._layout) do
-        local icon = self._icons[id]
-        draw_icon(icon, spatial)
-        --gfx.rectangle("line", spatial.x, spatial.y, 40, 40, 2)
-    end
-
-    gfx.setColor(1, 1, 1, 0.6)
-    for id, spatial in pairs(self._layout) do
-        gfx.rectangle("line", spatial.x, spatial.y, 40, 40, 2)
-    end
-    gfx.setLineWidth(1)
-end
-
-return ui
+return turn_queue

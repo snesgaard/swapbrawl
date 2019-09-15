@@ -1,123 +1,73 @@
-local function _delay_factor(agility)
-    return 1.0 - agility / 10.0
+local turn_queue = {}
+
+function turn_queue.init_state(state)
+    state.turn = dict{
+        delay = dict(),
+        order = list()
+    }
 end
 
-local function _get_delay(id, agility, delay)
-    local a = agility[id]
-    local f = _delay_factor(a or 0)
-    return delay * f
-end
-
-local function _reorder(delays)
-    local order = delays
+local function update_order(state, delay)
+    local order = delay
         :keys()
         :sort(function(a, b)
-            return delays[a] < delays[b]
+            return (delay[a] or 0) < (delay[b] or 0)
         end)
 
-    return order
+    return state
+        :write("turn/delay", delay)
+        :write("turn/order", order)
 end
 
-local function _normalize(_delays, order)
-    if #order == 0 then
-        return _delays
-    end
-
-    local min_delay = _delays[order:head()] or 0
-    if min_delay <= 0 then
-        return _delays
-    end
-
-    for id, delay in pairs(_delays) do
-        _delays[id] = delay - min_delay
-    end
-
-    return _delays
+local function read_delay_order(state)
+    return state:read("turn/delay"), state:read("turn/order")
 end
 
-local function _future_index(order, delays, id, agility, delay)
-    if not delay then
-        error("Delay must be set!")
-    end
+function turn_queue.take_turn(state, args, history)
+    local id = args.id
+    -- Agi should be 0 - 9
+    local agi = state:agility(id)
+    local factor = 1 + agi / 9.0
+    local d = (args.delay or 0) / factor
 
-    local next_index = order:argfind(function(key)
-        return delays[key] >= delay
+    -- Invoke agi echo
+
+    local delay = state:read("turn/delay")
+    local order = state:read("turn/initiate")
+
+    delay = delay:set(id, (delay[id] or 0) + d)
+    order = order:sort(function(a, b)
+        return (delay[a] or 0) < (delay[b] or 0)
     end)
 
-    -- If we did not find anything assume last place
-    return next_index or #order + 1
+    local next_state = state
+        :write("turn/delay", delay)
+        :write("turn/order", order)
+
+    history[#history + 1] = make_epoch("take_turn", next_state, dict(args))
+    return history
 end
 
-local queue = {}
-queue.__index = queue
+function turn_queue.insert(state, args, history)
+    local delay = state("turn/delay")
+    local order = state("turn/order")
 
-function queue.create(_delays, _order, _action)
-    local this = {}
-    this._delays = _normalize(
-        _delays or dict(), _order or list()
-    )
-    this._order = _order or _reorder(this._delays)
-    this._action = _action or dict()
-    this._bias = dict()
-    return setmetatable(this, queue)
+    local next_state = update_order(delay:set(args.id, args.delay))
+
+    local info = dict(args)
+
+    history[#history + 1] = make_epoch("turn_insert", next_state, args)
+    return history
 end
 
-function queue:setup(actors, agility, _action)
-    local _actordelay = dict()
+function turn_queue.remove(state, args, history)
+    local delay, order = read_delay_order(state)
 
-    for _, id in ipairs(actors) do
-        _actordelay[id] = _get_delay(id, agility, 10)
-    end
+    local next_state = update_order(delay:set(args.id))
 
-    return queue.create(_actordelay, nil, _action)
+    local info = dict(args)
+    history[#history + 1] = make_epoch("turn_remove", next_state, args)
+    return history
 end
 
-function queue:advance(id, agility, delay, action)
-    delay = _get_delay(id, agility, delay or 10)
-    local prev_delay = self._delays[id] or 0
-    delay = delay + prev_delay
-    -- remove actor from agility
-    local cur_index = self._order:argfind(id)
-    -- Remove if present in order list
-    _order = cur_index and self._order:erase(cur_index) or self._order
-    -- Get future index
-    local index = _future_index(_order, self._delays, id, agility, delay)
-    return queue.create(
-        self._delays:set(id, delay), _order:insert(id, index),
-        self._action:set(id, action)
-    )
-end
-
-function queue:remove(id)
-    local cur_index = self._order:argfind(id)
-    if cur_index then
-        return queue.create(
-            self._delays:set(id), self._order:erase(cur_index),
-            self._action:set(id)
-
-        )
-    else
-        return self
-    end
-end
-
-function queue:promote(id, action)
-    local next_action = self._action:set(id, action)
-    local index = self._order:argfind(id)
-    local next_order = self._order
-    if index then
-        next_order = next_order:erase(index)
-    end
-    next_order = next_order:insert(id, 1)
-    local next_delay = self._delays:set(id, 0)
-
-    return queue.create(next_delay, next_order, next_action)
-end
-
-function queue:next()
-    local id = self._order:head()
-    return id, self._action[id]
-end
-
-
-return queue
+return turn_queue

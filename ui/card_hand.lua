@@ -1,5 +1,4 @@
 local card = require "ui.card"
-local state = require "combat.state"
 
 local function sort_cards(a, b)
     local ax = a.highlighted and 10000 or a.__transform.pos.x
@@ -10,7 +9,7 @@ end
 local hand = {}
 
 function hand:test()
-    local state = state()
+    local state = state.create()
     self:select(1)
     self:insert(state, "1", "2", "3")
     self:remove("2")
@@ -20,7 +19,7 @@ function hand:create()
     self.cards = list()
     self:set_order(sort_cards)
     self.cardids = dict()
-    self.anime_queue = self:child(require "combat.action_queue")
+    self.anime_queue = self:child(action_queue)
 end
 
 function hand:insert(state, ...)
@@ -68,7 +67,7 @@ function hand:insert(state, ...)
 
     self:select(self.selected)
 
-    self.anime_queue:submit(action)
+    self.anime_queue:add(action)
 end
 
 function hand:clear()
@@ -155,7 +154,7 @@ function hand:remove(...)
         end
     end
 
-    self.anime_queue:submit(action)
+    self.anime_queue:add(action)
 end
 
 function hand:select(index)

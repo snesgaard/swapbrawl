@@ -1,15 +1,8 @@
---require("lovedebug")
+require "lovedebug"
 require "nodeworks"
 
-actor = require "actor"
-
-ui = require "ui"
-
-charbarui = require "ui.char_bar"
-
-state = require "combat.state"
-
 function love.load(arg)
+    log.outfile = "./log.txt"
     -- SET A BATTLE AS DEFALT
     gfx.setBackgroundColor(0, 0, 0, 0)
     arg = list(unpack(arg))
@@ -29,7 +22,6 @@ function love.load(arg)
         card = "designer/card",
         cards = "designer/card",
     }
-
     entry = entrymap[entry]
     if entry then
         require(entry)
@@ -43,6 +35,6 @@ function love.keypressed(key, scancode, isrepeat)
     if key == "escape" then love.event.quit() end
 
     if root and root.keypressed then
-        root.keypressed(key, scancode, isrepeat)
+        root:invoke("keypressed", key, scancode, isrepeat)
     end
 end

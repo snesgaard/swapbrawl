@@ -5,3 +5,6 @@ all:
 	@make -C art/maps
 	@make -C art/icons
 	@make -C art/ui
+
+log:
+	@rm -f log.txt
