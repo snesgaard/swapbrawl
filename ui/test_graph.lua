@@ -7,18 +7,27 @@ local function build_border_rect(graph)
     :leaf(gfx_nodes.draw_rect, "line")
 end
 
-local function build_icon_bar(graph, id)
+local function build_icon_bar(graph, id, icons)
+    local function get_icon()
+        local atlas, image = unpack(icons[id] or {})
+        if not atlas or not image then return end
+        return get_atlas(atlas):get_animation(image)
+    end
+
     graph
     :branch(join(id, "base_color"), gfx_nodes.color.set, 1, 1, 1, 1)
     :branch(join(id, "icon_spatial"), gfx_nodes.spatial.set, nil, nil, 40, 40)
     :branch(join(id, "icon_transform"), gfx_nodes.transform)
         :map(build_border_rect)
     :back(join(id,"icon_transform"))
+    :leaf(
+        join(id, "icon_sprite"), gfx_nodes.sprite, get_icon()
+    )
     :branch(join(id, "bar_color"), gfx_nodes.color.dot, 1, 1, 1, 1)
     :branch(join(id, "bar_spatial"), gfx_nodes.spatial.right, 20, 0, 200)
     :branch(join(id, "bar_transform"), gfx_nodes.transform)
         :map(build_border_rect)
-        :branch(gfx_nodes.color.set, 0.5, 0.5, 0.5)
+        :branch(gfx_nodes.color.set, 0.5, 0.5, 0.5, nil)
         :leaf(
             join(id, "bar_text"), gfx_nodes.text, nil,
             "center", "center", font(20)
@@ -28,10 +37,19 @@ end
 
 local test = {}
 
+function test:icon(id, atlas, image)
+    self._icons[id] = {atlas, image}
+    self._graph:reset(
+        join(id, "icon_sprite"), get_atlas(atlas):get_animation(image)
+    )
+    return self
+end
+
 function test:create()
     self._graph = graph.create()
     self._order = list()
     self._action = dict()
+    self._icons = dict()
 
     self._anime = self:child(action_queue)
 end
@@ -48,7 +66,7 @@ local function appear(server, self, ...)
         -- Might be easier to handle if e.g. popping middle bars
         -- Turns out to be relevant
         self._graph
-            :map(build_icon_bar, id)
+            :map(build_icon_bar, id, self._icons)
             :branch(join(id, "link"), gfx_nodes.spatial.down, 0, 20)
 
         local n = self._graph:data(id, "icon_transform")
@@ -145,10 +163,15 @@ function test:hide()
 end
 
 function test:test()
+    self:icon("foo", "art/icons", "fencer_icon")
+    self:icon("bar", "art/icons", "alchemist")
+    self:icon("baz", "art/icons", "vampire")
+    self:icon("sponge", "art/icons", "vampress")
     self:appear("foo", "bar", "baz", "sponge")
-    self:push("yes")
-    self:push("yes2")
-    self:push("yes3")
+    self:push("Level Drain")
+    self:push("Reap")
+    self:push("Fireball")
+    self:push("Parry")
     self._anime:add(function()
         while event:wait("keypressed") ~= "space" do end
     end)

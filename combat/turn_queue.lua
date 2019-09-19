@@ -2,72 +2,51 @@ local turn_queue = {}
 
 function turn_queue.init_state(state)
     state.turn = dict{
-        delay = dict(),
-        order = list()
+        pending = list(),
+        order = list(),
+        done = list(),
     }
 end
 
-local function update_order(state, delay)
-    local order = delay
-        :keys()
-        :sort(function(a, b)
-            return (delay[a] or 0) < (delay[b] or 0)
-        end)
-
+function turn_queue.new_turn(state, args)
+    -- TODO Filter based on HP values
+    local function is_number(val) return type(val) == "number" end
+    local actors = state:filter(is_number):position():values()
+    local seeds = {}
+    for _, id in ipairs(actors) do
+        -- TODO: Propery scaled RNG
+        seeds[id] = state:agility(id) + rng()
+    end
+    local order = actors:sort(
+        function(a, b)
+            return seeds[a] < seeds[b]
+        end
+    )
     return state
-        :write("turn/delay", delay)
-        :write("turn/order", order)
+        :write("turn/pending", order)
+        :write("turn/order", list())
+        :write("turn/done", list())
 end
 
-local function read_delay_order(state)
-    return state:read("turn/delay"), state:read("turn/order")
+function turn_queue.push(state, args)
+    local action, target = args.action, args.target
+    local pending = state:read("turn/pending")
+    local order = state:read("turn/order")
+    local id = pending:head()
+    -- Queue has been exhausted
+    if not id then return state end
+    local data = {action=action, target=target, id=id}
+    return state
+        :write("turn/pending", pending:body())
+        :write("turn/order", order:insert(1, data))
 end
 
-function turn_queue.take_turn(state, args, history)
-    local id = args.id
-    -- Agi should be 0 - 9
-    local agi = state:agility(id)
-    local factor = 1 + agi / 9.0
-    local d = (args.delay or 0) / factor
-
-    -- Invoke agi echo
-
-    local delay = state:read("turn/delay")
-    local order = state:read("turn/initiate")
-
-    delay = delay:set(id, (delay[id] or 0) + d)
-    order = order:sort(function(a, b)
-        return (delay[a] or 0) < (delay[b] or 0)
-    end)
-
-    local next_state = state
-        :write("turn/delay", delay)
-        :write("turn/order", order)
-
-    history[#history + 1] = make_epoch("take_turn", next_state, dict(args))
-    return history
-end
-
-function turn_queue.insert(state, args, history)
-    local delay = state("turn/delay")
-    local order = state("turn/order")
-
-    local next_state = update_order(delay:set(args.id, args.delay))
-
-    local info = dict(args)
-
-    history[#history + 1] = make_epoch("turn_insert", next_state, args)
-    return history
-end
-
-function turn_queue.remove(state, args, history)
-    local delay, order = read_delay_order(state)
-
-    local next_state = update_order(delay:set(args.id))
-
-    local info = dict(args)
-    history[#history + 1] = make_epoch("turn_remove", next_state, args)
-    return history
+function turn_queue.pop(state, args)
+    local order = state:read("turn/order")
+    local done = state:read("turn/done")
+    return state
+        :write("turn/order", order:body())
+        :write("turn/done", done:insert(oder:head()))
 end
 
 return turn_queue

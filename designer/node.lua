@@ -37,6 +37,7 @@ function love.load(arg)
 
     dress = suit.new()
     --gfx.setBackgroundColor(0.5, 0.5, 0.5)
+
 end
 
 local combo = {value = 1, items = {'A', 'B', 'C'}}
@@ -59,7 +60,11 @@ function love.draw()
     gfx.setColor(1, 1, 1)
     gfx.line(0, h / 2, w, h / 2)
     gfx.line(w / 2, 0, w / 2, h)
-    nodes:draw(w / 2, h / 2)
+    if not settings.origin then
+        nodes:draw(w / 2, h / 2)
+    else
+        nodes:draw(0, 0)
+    end
     gfx.setColor(1, 1, 1)
     dress:draw()
 end
