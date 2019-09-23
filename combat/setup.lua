@@ -66,7 +66,6 @@ function setup.init_actor_visual(root, state, id)
     actor_root.player = actor_root:child(animation_player)
 
     local atlas = data.atlas and get_atlas(data.atlas) or nil
-
     if atlas and data.animations then
         actor_root.player = atlas:animation_player(data.animations)
 
@@ -77,6 +76,8 @@ function setup.init_actor_visual(root, state, id)
         end
 
         actor_root:adopt(actor_root.player)
+        actor_root.player:play{"idle", loop=true}
+        print(actor_root.player.__play)
     end
 
 

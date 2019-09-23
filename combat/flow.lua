@@ -17,8 +17,9 @@ function states.setup:enter(data, party, foes)
         state = setup.init_actor_state(state, id, -index, foes[index])
     end
 
-    local root = Node.create()
+    local root = self:child()
     root.actors = root:child()
+    root.actors.__transform.scale = vec2(2, 2)
     root.ui = root:child()
 
     for _, id in ipairs(party_ids + foes_ids) do
