@@ -56,28 +56,18 @@ function setup.init_actor_visual(root, state, id)
     -- Setup sprite
     local actor_root = root.actors:child()
 
-    actor_root.sprite = actor_root:child(Sprite)
-    if state:position(id) < 0 then
-        actor_root.sprite.__transform.scale.x = -1
-    end
-    actor_root.sprite.__transform.pos = position.get_world(
-        state:position(), id
-    )
-    actor_root.player = actor_root:child(animation_player)
-
-    local atlas = data.atlas and get_atlas(data.atlas) or nil
-    if atlas and data.animations then
-        actor_root.player = atlas:animation_player(data.animations)
-
-        for key, f in pairs(data.post_animation or {}) do
-            local anime = actor_root.player:animation(key)
-            local frames = atlas:get_animation(data.animations[key])
-            if anime and frames then f(animation, frames, anime) end
+    if data.atlas and data.animations then
+        actor_root.sprite = actor_root:child(
+            Sprite, data.animations, data.atlas
+        )
+        if state:position(id) < 0 then
+            actor_root.sprite.__transform.scale.x = -1
         end
 
-        actor_root:adopt(actor_root.player)
-        actor_root.player:play{"idle", loop=true}
-        print(actor_root.player.__play)
+        actor_root.sprite.__transform.pos = position.get_world(
+            state:position(), id
+        )
+        actor_root.sprite:queue({"idle"})
     end
 
 

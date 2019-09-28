@@ -19,7 +19,7 @@ function states.setup:enter(data, party, foes)
 
     local root = self:child()
     root.actors = root:child()
-    root.actors.__transform.scale = vec2(2, 2)
+    --root.actors.__transform.scale = vec2(2, 2)
     root.ui = root:child()
 
     for _, id in ipairs(party_ids + foes_ids) do
@@ -61,6 +61,9 @@ end
 function container:test(settings)
     settings.origin = true
     self.fsm:begin(list("fencer", "alchemist"), list("fencer", "fencer"))
+end
+
+function love.keypressed(key)
 end
 
 
