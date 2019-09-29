@@ -10,9 +10,7 @@ function fencer.sprite()
     return get_atlas("art/main_actors"), animations, offset
 end
 
-function fencer.icon()
-    return get_atlas("art/icons"):get_animation("fencer_icon")
-end
+fencer.icon = {"art/icons", "fencer_icon"}
 
 fencer.animations = {
     idle = "fencer_idle",

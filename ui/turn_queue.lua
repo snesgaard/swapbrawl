@@ -188,4 +188,11 @@ function test:__draw()
     self._graph:traverse()
 end
 
+test.remap = {}
+
+test.remap["combat.turn_queue:new_turn"] = function(self, state, info)
+    local order = state:read("turn/pending")
+    self:appear(unpack(order))
+end
+
 return test

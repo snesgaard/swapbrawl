@@ -1,8 +1,6 @@
 local actor = {}
 
-function actor.icon()
-    return get_atlas("art/icons"):get_animation("alchemist")
-end
+actor.icon = {"art/icons", "alchemist"}
 
 actor.atlas = "art/main_actors"
 

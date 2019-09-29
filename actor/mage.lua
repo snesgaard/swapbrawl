@@ -1,5 +1,7 @@
 local actor = {}
 
+actor.icon = {"art/icons", "mage"}
+
 actor.atlas = "art/main_actors"
 
 actor.animations = {

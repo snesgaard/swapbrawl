@@ -98,6 +98,10 @@ function setup.init_actor_visual(root, state, id)
         )
     end
 
+    if data.icon then
+        root.ui.turn:icon(id, unpack(data.icon))
+    end
+
     return state
 end
 

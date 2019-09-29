@@ -2,6 +2,8 @@ local actor = {}
 
 actor.atlas = "art/main_actors"
 
+actor.icon = {"art/icons", "vampress"}
+
 actor.animations = {
     idle = "vampress_idle",
     dash = "vampress_dash/dash",
