@@ -10,8 +10,8 @@ end
 
 function turn_queue.new_turn(state, args)
     -- TODO Filter based on HP values
-    local function is_number(val) return type(val) == "number" end
-    local actors = state:filter(is_number):position():values()
+    local function isnt_number(val) return type(val) ~= "number" end
+    local actors = state:position():values():filter(isnt_number)
     local seeds = {}
     for _, id in ipairs(actors) do
         -- TODO: Propery scaled RNG

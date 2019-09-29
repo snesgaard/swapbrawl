@@ -1,7 +1,8 @@
 local setup = require "combat.setup"
+local turn = require "combat.turn_queue"
 require "combat.update_state"
 
-local states = {idle={}, setup={}}
+local states = {idle={}, setup={}, begin_turn={}}
 
 function states.setup:enter(data, party, foes)
     local party_ids = party:map(id_gen.register)
@@ -26,15 +27,17 @@ function states.setup:enter(data, party, foes)
         setup.init_actor_visual(root, state, id)
     end
 
-    the_thing = {spatial = spatial()}
-
-    event:listen(root.actors.fencer_0001.sprite, "slice/origin", function(s) the_thing.spatial = s end)
+    root.ui.turn = root.ui:child(require "ui.turn_queue")
+    root.ui.turn.__transform.pos = vec2(gfx.getWidth() - 400, 100)
 
     data.root = root
     data.state = state
+    return self:enter_combat()
 end
 
-
+function states.begin_turn:enter(data)
+    local state, epic = data.state:transform({path="combat.turn_queue:new_turn"})
+end
 
 function states.idle:enter(data)
 
@@ -44,8 +47,6 @@ local function draw(data)
     if data.root then
         data.root:draw()
     end
-
-    gfx.rectangle("line", the_thing.spatial:unpack())
 end
 
 local flow = {
@@ -53,10 +54,16 @@ local flow = {
     data = {},
     edges = {
         {from="idle", to="setup", name="begin"},
+        {from="setup", to="begin_turn", name="enter_combat"}
     },
+    methods = {}
     draw = draw,
     init = "idle"
 }
+
+function methods:broadcast()
+    
+end
 
 local container = {}
 
@@ -66,7 +73,7 @@ end
 
 function container:test(settings)
     settings.origin = true
-    self.fsm:begin(list("fencer", "alchemist"), list("fencer", "fencer"))
+    self.fsm:begin(list("fencer", "alchemist", "mage"), list("vampire", "vampress"))
 end
 
 function love.keypressed(key)

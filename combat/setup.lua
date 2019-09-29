@@ -44,6 +44,16 @@ function setup.init_actor_state(state, id, place, type)
     return state, id
 end
 
+function setup.init_actor_ui(root, state, id)
+    local type = state:read(join("actor/type", id))
+    if not type then
+        log.warn("Type for %i is not defined", id)
+        return
+    end
+
+    local data = actor(type)
+end
+
 function setup.init_actor_visual(root, state, id)
     local type = state:read(join("actor/type", id))
     if not type then
@@ -73,7 +83,7 @@ function setup.init_actor_visual(root, state, id)
     root.actors[id] = actor_root
 
     -- Setup ui, if in party
-    if state:position(id) then
+    if state:position(id) > 0 and false then
         root.ui[id] = root.ui:child(require "ui.char_bar")
             :position(state:position(id))
             :set_icon(data.icon and data.icon())

@@ -1,48 +1,94 @@
-local function printf(text, space, align, valign, ...)
-    local font = gfx.getFont()
-    local fh = font:getHeight()
-    local x, y, w, h = space:unpack()
-    if valign == "center" then
-        y = y + (h - fh) / 2
-    elseif valign == "bottom" then
-        y = y + h - fh - 2
+local function build_border_rect(graph)
+    graph
+    :leaf(gfx_nodes.draw_rect, "fill")
+    :branch(gfx_nodes.color.darken, 0.5)
+    :branch(gfx_nodes.line_width, 4)
+    :branch(gfx_nodes.spatial.border_expand)
+    :leaf(gfx_nodes.draw_rect, "line")
+end
+
+local function build_icon_bar(graph, id, icons)
+    local function get_icon()
+        local atlas, image = unpack(icons[id] or {})
+        if not atlas or not image then return end
+        return get_atlas(atlas):get_animation(image)
     end
-    gfx.printf(text, x, y, w, align, ...)
+
+    graph
+    :branch(join(id, "base_color"), gfx_nodes.color.set, 1, 1, 1, 1)
+    :branch(join(id, "icon_spatial"), gfx_nodes.spatial.set, nil, nil, 40, 40)
+    :branch(join(id, "icon_transform"), gfx_nodes.transform)
+        :map(build_border_rect)
+    :back(join(id,"icon_transform"))
+    :leaf(
+        join(id, "icon_sprite"), gfx_nodes.sprite, get_icon()
+    )
+    :branch(join(id, "bar_color"), gfx_nodes.color.dot, 1, 1, 1, 1)
+    :branch(join(id, "bar_spatial"), gfx_nodes.spatial.right, 20, 0, 200)
+    :branch(join(id, "bar_transform"), gfx_nodes.transform)
+        :map(build_border_rect)
+        :branch(gfx_nodes.color.set, 0.5, 0.5, 0.5, nil)
+        :leaf(
+            join(id, "bar_text"), gfx_nodes.text, nil,
+            "center", "center", font(20)
+        )
+    :back(join(id, "icon_spatial"))
 end
 
-local turn_queue = {}
+local test = {}
 
-function turn_queue:create()
-    self._spatials = dict()
-    self._offset = dict()
-    self._color = color.create()
+function test:icon(id, atlas, image)
+    self._icons[id] = {atlas, image}
+    self._graph:reset(
+        join(id, "icon_sprite"), get_atlas(atlas):get_animation(image)
+    )
+    return self
+end
+
+function test:create()
+    self._graph = graph.create()
     self._order = list()
-    self._color_stack = colorstack()
-    self._icon = dict()
-    self._action = list()
+    self._action = dict()
+    self._icons = dict()
 
-    self.ICON_SIZE = vec2(20, 20) * 2
-    self.ICON_MARGIN = vec2(4, 4)
-    self.ACTION_SIZE = vec2(200, self.ICON_SIZE.y)
-    self.BG_COLOR = color.create()
-    self.MARGIN = vec2(7, 7)
-    self.INTRO_DELAY = 0.1
-    self.INTRO_DUR = 0.5
-
-    self._server = self:child(action_queue)
+    self._anime = self:child(action_queue)
 end
 
-function turn_queue:test()
-    self:appear(list("foo", "bar", "baz"))
-    self:push("yes1")
-    self:push("yes2")
-    self:push("yes3")
-    self:push("yes4")
-    self:pop()
+
+local function appear(server, self, ...)
+    self._order = list(...)
+    self._graph = graph.create()
+    self._action = dict()
+    local tweens = {}
+    for i, id in ipairs(self._order) do
+        -- TODO consider refactoring to an individual graph
+        -- pr actor instead of a single combined graph
+        -- Might be easier to handle if e.g. popping middle bars
+        -- Turns out to be relevant
+        self._graph
+            :map(build_icon_bar, id, self._icons)
+            :branch(join(id, "link"), gfx_nodes.spatial.down, 0, 20)
+
+        local n = self._graph:data(id, "icon_transform")
+        local c = self._graph:data(id, "base_color")
+        n.x = 500
+        c.color[4] = 0
+        tweens[i] = tween(
+            0.25, n, {x=0, y=0}, c.color, {[4] = 1}
+        )
+            :delay(0.1 * i)
+        local cb = self._graph:data(id, "bar_color")
+        cb.color[4] = 0
+    end
+
+    -- Note this structure only works due to the time difference
+    for _, t in ipairs(tweens) do
+        event:wait(t, "finish")
+    end
 end
 
-function turn_queue:icon(id, texture, quad)
-
+function test:appear(...)
+    return self._anime:add(appear, self, ...)
 end
 
 local function push(server, self, action)
@@ -52,143 +98,94 @@ local function push(server, self, action)
             if not self._action[id] then return id end
         end
     end
+
     local id = get_id()
+
     if not id then return end
-    local barid = self:bar_id(id)
-    local s = self._spatials[self:icon_id(id)]
-    s = s:right(self.MARGIN.x, 0, self.ACTION_SIZE.x)
 
     self._action[id] = action
-    self._offset[barid] = vec2(0, -1000)
-    self._spatials[barid] = s
 
-    local t = tween(self.INTRO_DUR, self._offset[barid], vec2())
+    local bt = self._graph:data(id, "bar_transform")
+    local bc = self._graph:data(id, "bar_color")
+    local btxt = self._graph:data(id, "bar_text")
+    btxt.text = action
+    bt.x, bt.y = 0, -1000
+    local t = tween(
+        0.25, bt, {x=0, y=0}, bc.color, {[4]=1}
+    )
     event:wait(t, "finish")
+    event(self, "push_done", action)
 end
 
-function turn_queue:push(action)
-    self._server:add(push, self, action)
+function test:push(action)
+    self._anime:add(push, self, action)
 end
 
 local function pop(server, self)
     local id = self._order:head()
+
     if not id then return end
 
-    local iconid = self:icon_id(id)
+    self._order = self._order:body()
+    local it = self._graph:data(id, "icon_transform")
+    local bc = self._graph:data(id, "base_color")
     local t = tween(
-        self.INTRO_DUR,
-        self._offset[iconid], vec2(500, 0),
-        self._color[id], {[4]=0}
+        0.5, it, {x=500, y=0}, bc.color, {[4]=0}
     )
     event:wait(t, "finish")
-    self._action[id] = nil
-    self._order = self._order:body()
 end
 
-function turn_queue:pop()
-    self._server:add(pop, self)
-end
-
-function turn_queue:icon_id(id)
-    return join(id, "icon")
-end
-
-function turn_queue:bar_id(id)
-    return join(id, "bar")
-end
-
-local function appear(server, self, order)
-    self._order = order
-    local s = spatial(
-        0, 0, (self.ICON_SIZE + self.ICON_MARGIN):unpack()
-    )
-    for _, id in pairs(order) do
-        local icon = self:icon_id(id)
-        self._spatials[icon] = s
-        self._offset[icon] = vec2(500, 0)
-        self._action[id] = nil
-        self._color[id] = color.create(1, 1, 1, 0)
-        s = s:down(0, self.MARGIN.y)
-    end
-
-    local function intro(server, id, iconid, delay)
-        event:sleep(delay)
-        local t = tween(
-            self.INTRO_DUR,
-            self._offset[iconid], vec2(),
-            self._color[id], {[4]=1}
-        )
-        event:wait(t, "finish")
-        event(server, "appear_done", iconid)
-    end
-
-    for i, id in ipairs(order) do
-        server:fork(intro, id, self:icon_id(id), self.INTRO_DELAY * i)
-    end
-
-    for i, id in ipairs(order) do
-        print("got event", event:wait(server, "appear_done"))
-    end
+function test:pop()
+    self._anime:add(pop, self)
 end
 
 local function hide(server, self)
-    local function do_hiding(server, iconid, delay)
-        event:sleep(delay)
-        local t = tween(self.INTRO_DUR, self._offset[iconid], vec2(500, 0))
-        event:wait(t, "finish")
-        event(server, "hide_done")
-    end
+    local tweens = {}
 
     for i, id in ipairs(self._order) do
-        server:fork(do_hiding, self:icon_id(id), self.INTRO_DELAY * i)
+        local n = self._graph:data(id, "icon_transform")
+        local c = self._graph:data(id, "base_color")
+        tweens[i] = tween(
+            0.5, n, {x=500, y=0}, c.color, {[4] = 0}
+        )
+            :delay(0.1 * i)
     end
 
-    for _, id in ipairs(self._order) do
-        event:wait(server, "hide_done")
+    for _, t in ipairs(tweens) do
+        event:wait(t, "finish")
     end
+    self._order = list()
+    self._graph = graph.create()
 end
 
-function turn_queue:appear(order)
-    self._server:add(appear, self, order)
+function test:hide()
+    self._anime:add(hide, self)
 end
 
-function turn_queue:hide()
-    self._server:add(hide, self)
+function test:test()
+    self:icon("foo", "art/icons", "fencer_icon")
+    self:icon("bar", "art/icons", "alchemist")
+    self:icon("baz", "art/icons", "vampire")
+    self:icon("sponge", "art/icons", "vampress")
+    self:appear("foo", "bar", "baz", "sponge")
+    self:push("Level Drain")
+    self:push("Reap")
+    self:push("Fireball")
+    self:push("Parry")
+    self._anime:add(function()
+        while event:wait("keypressed") ~= "space" do end
+    end)
+    self:pop()
+    self:pop()
+    self:pop()
+    self:pop()
+    self:hide()
 end
 
-function turn_queue:_draw_icon(id, space, color_stack, icon)
-    color_stack:push()
-    gfx.rectangle("fill", space:unpack())
-    color_stack:map(dot, color.create(0.5, 0.5, 0.5, 0.5))
-    local line_width = self.ICON_MARGIN.x
-    gfx.setLineWidth(line_width)
-    gfx.rectangle(
-        "line", space:expand(-line_width, -line_width):unpack()
-    )
-    color_stack:pop()
+function test:__draw()
+    colorstack:clear()
+    spatialstack:clear()
+    self._graph:traverse()
 end
 
-function turn_queue:__draw(x, y)
-    for _, id in pairs(self._order) do
-        local iconid = self:icon_id(id)
-        local barid = self:bar_id(id)
-        local text = self._action[id]
-
-        self._color_stack:clear()
-        self._color_stack:map(dot, self._color[id])
-        gfx.push()
-        gfx.translate(self._offset[iconid]:unpack())
-        --gfx.rectangle("fill", self._spatials[iconid]:unpack())
-        self:_draw_icon(id, self._spatials[iconid], self._color_stack)
-        if text then
-            gfx.translate(self._offset[barid]:unpack())
-            gfx.rectangle("fill", self._spatials[barid]:unpack())
-            gfx.setColor(0, 0, 0)
-            gfx.setFont(font(20))
-            printf(text, self._spatials[barid], "center", "center")
-        end
-        gfx.pop()
-    end
-end
-
-return turn_queue
+return test
