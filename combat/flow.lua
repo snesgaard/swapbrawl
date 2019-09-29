@@ -26,6 +26,10 @@ function states.setup:enter(data, party, foes)
         setup.init_actor_visual(root, state, id)
     end
 
+    the_thing = {spatial = spatial()}
+
+    event:listen(root.actors.fencer_0001.sprite, "slice/origin", function(s) the_thing.spatial = s end)
+
     data.root = root
     data.state = state
 end
@@ -40,6 +44,8 @@ local function draw(data)
     if data.root then
         data.root:draw()
     end
+
+    gfx.rectangle("line", the_thing.spatial:unpack())
 end
 
 local flow = {

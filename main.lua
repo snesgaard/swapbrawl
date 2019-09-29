@@ -21,6 +21,7 @@ function love.load(arg)
         ability = "designer/ability",
         card = "designer/card",
         cards = "designer/card",
+        animation = "test/animation"
     }
     entry = entrymap[entry]
     if entry then

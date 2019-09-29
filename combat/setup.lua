@@ -70,7 +70,6 @@ function setup.init_actor_visual(root, state, id)
         actor_root.sprite:queue({"idle"})
     end
 
-
     root.actors[id] = actor_root
 
     -- Setup ui, if in party

@@ -1,18 +1,17 @@
 local actor = {}
 
-local animations = {}
+actor.atlas = "art/main_actors"
 
-function animations.idle(sprite, dt)
-    sprite:loop(dt, "mage_idle")
-end
-
-function actor.sprite()
-    return get_atlas("art/main_actors"), animations
-end
-
-function actor.icon()
-    return get_atlas("art/icons"):get_animation("mage")
-end
+actor.animations = {
+    idle = "mage_idle",
+    evade = "mage_dash/evade",
+    dash = "mage_dash/dash",
+    idle2chant = "mage_cast/idle2chant",
+    chant = "mage_cast/chant",
+    chant2cast = "mage_cast/chant2cast",
+    cast = "mage_cast/cast",
+    cast2idle = "mage_cast/cast2idle",
+}
 
 function actor.basestats()
     return {

@@ -21,8 +21,11 @@ fencer.animations = {
     attack = "fencer_attack/attack",
     post_attack = "fencer_attack/post_attack",
     cast = "fencer_attack/item_use",
-    post_cast = "fencer_attack/post_item"
+    post_cast = "fencer_attack/post_item",
+    cast2idle = "fencer_attack/item2idle"
 }
+
+fencer.atlas = "art/main_actors"
 
 local animation_post = {}
 fencer.post_animation = animation_post
@@ -32,7 +35,6 @@ function animation_post.attack(api, frames, animation)
 end
 
 
-fencer.atlas = "art/main_actors"
 
 function fencer.basestats()
     return {
