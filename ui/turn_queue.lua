@@ -192,7 +192,9 @@ test.remap = {}
 
 test.remap["combat.turn_queue:new_turn"] = function(self, state, info)
     local order = state:read("turn/pending")
-    self:appear(unpack(order))
+    -- We want to push the reverse order as pending is given in order of action
+    -- picking, not execution
+    self:appear(unpack(order:reverse()))
 end
 
 return test

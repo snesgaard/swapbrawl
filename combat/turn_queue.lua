@@ -28,6 +28,10 @@ function turn_queue.new_turn(state, args)
         :write("turn/done", list())
 end
 
+function turn_queue.next_actor(state)
+    return (state:read("turn/pending") or list()):head()
+end
+
 function turn_queue.push(state, args)
     local action, target = args.action, args.target
     local pending = state:read("turn/pending")

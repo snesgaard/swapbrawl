@@ -20,7 +20,9 @@ local function remap(node)
     end
 end
 
-local states = {idle={}, setup={}, begin_turn={}}
+local states = {
+    idle={}, setup={}, begin_turn={}, pick_action={}, pick_action_ui={}
+}
 
 function states.setup:enter(data, party, foes)
     local party_ids = party:map(id_gen.register)
@@ -62,6 +64,15 @@ function states.begin_turn:enter(data)
     )
     self:broadcast(unpack(epic))
     data.state = state
+    return self:pick_action()
+end
+
+function states.pick_action:enter(data)
+    local next_id = require("combat.turn_queue").next_actor(data.state)
+    print(next_id)
+end
+
+function states.pick_action:ui(data, id)
 end
 
 function states.idle:enter(data)
@@ -85,7 +96,8 @@ local flow = {
     data = {},
     edges = {
         {from="idle", to="setup", name="begin"},
-        {from="setup", to="begin_turn", name="enter_combat"}
+        {from="setup", to="begin_turn", name="enter_combat"},
+        {from="begin_turn", to="pick_action", name="pick_action"},
     },
     methods = {__draw=draw, broadcast = broadcast},
     init = "idle"
