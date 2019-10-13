@@ -30,6 +30,8 @@ function ability.targets(state, id)
     return targets
 end
 
+
+
 function ability.animate(handle, context, epic, args, resolve)
     local epoch = epic.damage:tail()
 

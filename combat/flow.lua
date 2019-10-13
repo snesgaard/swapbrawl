@@ -1,5 +1,6 @@
-local setup = require "combat.setup"
+local actorsetup = require "combat.setup"
 local turn = require "combat.turn_queue"
+local target = require "combat.target"
 require "combat.update_state"
 
 local function remap(node)
@@ -20,99 +21,154 @@ local function remap(node)
     end
 end
 
-local states = {
-    idle={}, setup={}, begin_turn={}, pick_action={}, pick_action_ui={}
-}
+local function broadcast(...)
+    for key, epoch in pairs({...}) do
+        event(epoch.id, epoch.state, epoch.info, epoch.args)
+    end
+end
 
-function states.setup:enter(data, party, foes)
+local function update_state(data, ...)
+    local state, epic = data.state:transform(...)
+    broadcast(unpack(epic))
+    data.state = state
+    return state, epic
+end
+
+local function setup(data, party, foes)
     local party_ids = party:map(id_gen.register)
     local foes_ids = foes:map(id_gen.register)
 
     local state = state.create()
 
     for index, id in ipairs(party_ids) do
-        state = setup.init_actor_state(state, id, index, party[index])
+        state = actorsetup.init_actor_state(state, id, index, party[index])
     end
 
     for index, id in ipairs(foes_ids) do
-        state = setup.init_actor_state(state, id, -index, foes[index])
+        state = actorsetup.init_actor_state(state, id, -index, foes[index])
     end
 
-    local root = self:child()
-    root.actors = root:child()
+    data.actors = data:child()
     --root.actors.__transform.scale = vec2(2, 2)
-    root.ui = root:child()
+    data.ui = data:child()
 
-    root.ui.turn = root.ui:child(require "ui.turn_queue")
-    root.ui.turn.__transform.pos = vec2(gfx.getWidth() - 400, 100)
+    data.ui.turn = data.ui:child(require "ui.turn_queue")
+    data.ui.turn.__transform.pos = vec2(gfx.getWidth() - 400, 100)
 
-    remap(root.ui.turn)
+    remap(data.ui.turn)
 
     for _, id in ipairs(party_ids + foes_ids) do
-        setup.init_actor_visual(root, state, id)
+        actorsetup.init_actor_visual(data, state, id)
     end
 
-
-    data.root = root
     data.state = state
-    return self:enter_combat()
 end
 
-function states.begin_turn:enter(data)
-    local state, epic = data.state:transform(
-        {path="combat.turn_queue:new_turn"}
+
+local function pick_action(data, from_target)
+    -- Setup
+    while true do
+        local key = event:wait("inputpressed")
+        if key == "left" then
+            --shift target
+        elseif key == "right" then
+            --shift target
+        elseif key == "confirm" then
+            -- Transition
+            --return pick_target(data, action)
+            return
+        end
+    end
+end
+
+
+local function pick_target(data, user)
+    local target_data_dummy = {type="single", side="other"}
+    local actor_data = target.init(
+        data.state, user, target_data_dummy
     )
-    self:broadcast(unpack(epic))
-    data.state = state
-    return self:pick_action()
-end
-
-function states.pick_action:enter(data)
-    local next_id = require("combat.turn_queue").next_actor(data.state)
-    print(next_id)
-end
-
-function states.pick_action:ui(data, id)
-end
-
-function states.idle:enter(data)
-
-end
-
-local function draw(self, data, x, y)
-    if data.root then
-        data.root:draw(x, y)
+    print(actor_data.friends, actor_data.foes, actor_data.target, user)
+    -- Setup
+    while true do
+        local key = event:wait("inputpressed")
+        if key == "left" then
+            actor_data.target = target.left(target_data_dummy, actor_data)
+            print(actor_data.friends, actor_data.foes, actor_data.target, user)
+        elseif key == "right" then
+            actor_data.target = target.right(target_data_dummy, actor_data)
+            print(actor_data.friends, actor_data.foes, actor_data.target, user)
+        elseif key == "swap" then
+            actor_data.target = target.jump(target_data_dummy, actor_data)
+            print(actor_data.friends, actor_data.foes, actor_data.target, user)
+        elseif key == "confirm" then
+            -- Teardown
+            return action, targets
+        elseif key == "abort" then
+            -- Teardown
+            --return pick_action(data, true)
+        end
     end
 end
 
-local function broadcast(self, data, ...)
-    for key, epoch in pairs({...}) do
-        event(epoch.id, epoch.state, epoch.info, epoch.args)
-    end
+
+local function turn(data)
+    local next_id = require("combat.turn_queue").next_pending(data.state)
+    if not next_id then return end
+
+    -- TODO Need to call pick_action later
+    local action = "foo"
+    local target = {"bar", "baz"}
+    pick_target(data, next_id)
+    local args = {action=action, target=target}
+    log.info("Action picked %s", next_id)
+    update_state(data, {path="combat.turn_queue:push", args=args})
+    return turn(data)
 end
 
-local flow = {
-    states = states,
-    data = {},
-    edges = {
-        {from="idle", to="setup", name="begin"},
-        {from="setup", to="begin_turn", name="enter_combat"},
-        {from="begin_turn", to="pick_action", name="pick_action"},
-    },
-    methods = {__draw=draw, broadcast = broadcast},
-    init = "idle"
-}
 
-local container = {}
 
-function container:create()
-    self.fsm = self:child(fsm, flow)
+local function execute(data)
+    local next_action = require("combat.turn_queue").next_action(data.state)
+    if not next_action then return end
+
+    log.info("Executing action %s", next_action.id)
+    update_state(data, {path="combat.turn_queue:pop"})
+
+    return execute(data)
 end
 
-function container:test(settings)
+local function round(data)
+    -- setup new round
+    update_state(data, {path="combat.turn_queue:new_turn"})
+    -- Select actions
+    turn(data)
+    execute(data)
+end
+
+local flow = {}
+
+function flow:create()
+    local party = list("fencer", "alchemist", "mage")
+    local foes = list("vampire", "vampress")
+    self.data = Node.create()
+    setup(self.data, party, foes)
+    self:fork(self.combat)
+end
+
+function flow:combat()
+    round(self.data)
+end
+
+function flow:__update(dt)
+    self.data:update(dt)
+end
+
+function flow:__draw(x, y)
+    self.data:draw(x, y)
+end
+
+function flow:test(settings)
     settings.origin = true
-    self.fsm:begin(list("fencer", "alchemist", "mage"), list("vampire", "vampress"))
 end
 
-
-return container
+return flow

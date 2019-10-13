@@ -32,12 +32,21 @@ function love.load(arg)
     end
 end
 
+local input_from_key = {
+    left = "left", right = "right", space = "confirm", escape = "abort",
+    tab = "swap"
+}
+
 function love.keypressed(key, scancode, isrepeat)
     if key == "escape" then love.event.quit() end
 
     if root and root.keypressed then
         root:invoke("keypressed", key, scancode, isrepeat)
     end
+
+    local input = input_from_key[key]
+
+    if input then event("inputpressed", input) end
 
     event("keypressed", key, scancode, isrepeat)
 end

@@ -11,7 +11,7 @@ local function build_icon_bar(graph, id, icons)
     local function get_icon()
         local atlas, image = unpack(icons[id] or {})
         if not atlas or not image then return end
-        return get_atlas(atlas):get_animation(image)
+        return get_atlas(atlas):get_animation(image):head()
     end
 
     graph
@@ -39,8 +39,13 @@ local test = {}
 
 function test:icon(id, atlas, image)
     self._icons[id] = {atlas, image}
+    local anime = get_atlas(atlas):get_animation(image)
+    if not anime or #anime == 0 then
+        error(string.format("Animation undefined %s:%s", atlas, image))
+    end
+    print(dict(anime:head()))
     self._graph:reset(
-        join(id, "icon_sprite"), get_atlas(atlas):get_animation(image)
+        join(id, "icon_sprite"), anime:head()
     )
     return self
 end
@@ -80,7 +85,6 @@ local function appear(server, self, ...)
         local cb = self._graph:data(id, "bar_color")
         cb.color[4] = 0
     end
-
     -- Note this structure only works due to the time difference
     for _, t in ipairs(tweens) do
         event:wait(t, "finish")
@@ -88,6 +92,7 @@ local function appear(server, self, ...)
 end
 
 function test:appear(...)
+    print("appear")
     return self._anime:add(appear, self, ...)
 end
 
@@ -118,6 +123,7 @@ local function push(server, self, action)
 end
 
 function test:push(action)
+    print("push")
     self._anime:add(push, self, action)
 end
 
@@ -195,6 +201,14 @@ test.remap["combat.turn_queue:new_turn"] = function(self, state, info)
     -- We want to push the reverse order as pending is given in order of action
     -- picking, not execution
     self:appear(unpack(order:reverse()))
+end
+
+test.remap["combat.turn_queue:push"] = function(self, state, info)
+    self:push(info.action)
+end
+
+test.remap["combat.turn_queue:pop"] = function(self, state, info)
+    self:pop()
 end
 
 return test

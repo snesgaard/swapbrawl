@@ -28,7 +28,11 @@ function turn_queue.new_turn(state, args)
         :write("turn/done", list())
 end
 
-function turn_queue.next_actor(state)
+function turn_queue.pending(state, args)
+    return state:read("turn/pending")
+end
+
+function turn_queue.next_pending(state)
     return (state:read("turn/pending") or list()):head()
 end
 
@@ -39,10 +43,14 @@ function turn_queue.push(state, args)
     local id = pending:head()
     -- Queue has been exhausted
     if not id then return state end
-    local data = {action=action, target=target, id=id}
+    local data = dict({action=action, target=target, id=id})
     return state
         :write("turn/pending", pending:body())
-        :write("turn/order", order:insert(1, data))
+        :write("turn/order", order:insert(data, 1)), data
+end
+
+function turn_queue.next_action(state)
+    return (state:read("turn/order") or list()):head()
 end
 
 function turn_queue.pop(state, args)
@@ -50,7 +58,7 @@ function turn_queue.pop(state, args)
     local done = state:read("turn/done")
     return state
         :write("turn/order", order:body())
-        :write("turn/done", done:insert(oder:head()))
+        :write("turn/done", done:insert(order:head()))
 end
 
 return turn_queue
