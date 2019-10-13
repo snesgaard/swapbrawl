@@ -144,7 +144,13 @@ function target.right(target_data, actors)
 end
 
 function target.read(actors)
-    return unpack(target_data.target)
+    return target_data.target
+end
+
+function target.read_all(actors)
+    local id = actors.target
+    local s = actors.subtargets[id] or list()
+    return list(id, unpack(s))
 end
 
 

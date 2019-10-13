@@ -51,6 +51,7 @@ local function setup(data, party, foes)
     data.actors = data:child()
     --root.actors.__transform.scale = vec2(2, 2)
     data.ui = data:child()
+    data.ui.target_marker = data:child(require "sfx.marker")
 
     data.ui.turn = data.ui:child(require "ui.turn_queue")
     data.ui.turn.__transform.pos = vec2(gfx.getWidth() - 400, 100)
@@ -64,8 +65,10 @@ local function setup(data, party, foes)
     data.state = state
 end
 
+local pickers = {}
 
-local function pick_action(data, from_target)
+
+function pickers.action(data, from_target)
     -- Setup
     while true do
         local key = event:wait("inputpressed")
@@ -82,26 +85,34 @@ local function pick_action(data, from_target)
 end
 
 
-local function pick_target(data, user)
-    local target_data_dummy = {type="single", side="other"}
-    local actor_data = target.init(
-        data.state, user, target_data_dummy
+function pickers.target(data, user)
+    local target_data_dummy = {type="self", side="other"}
+    local actor_data = target.init(data.state, user, target_data_dummy)
+    data.ui.target_marker:positions_from_actor(
+        data.state, target.read_all(actor_data)
     )
-    print(actor_data.friends, actor_data.foes, actor_data.target, user)
+
     -- Setup
     while true do
         local key = event:wait("inputpressed")
         if key == "left" then
             actor_data.target = target.left(target_data_dummy, actor_data)
-            print(actor_data.friends, actor_data.foes, actor_data.target, user)
+            data.ui.target_marker:positions_from_actor(
+                data.state, target.read_all(actor_data)
+            )
         elseif key == "right" then
             actor_data.target = target.right(target_data_dummy, actor_data)
-            print(actor_data.friends, actor_data.foes, actor_data.target, user)
+            data.ui.target_marker:positions_from_actor(
+                data.state, target.read_all(actor_data)
+            )
         elseif key == "swap" then
             actor_data.target = target.jump(target_data_dummy, actor_data)
-            print(actor_data.friends, actor_data.foes, actor_data.target, user)
+            data.ui.target_marker:positions_from_actor(
+                data.state, target.read_all(actor_data)
+            )
         elseif key == "confirm" then
             -- Teardown
+            data.ui.target_marker:clear()
             return action, targets
         elseif key == "abort" then
             -- Teardown
@@ -118,7 +129,7 @@ local function turn(data)
     -- TODO Need to call pick_action later
     local action = "foo"
     local target = {"bar", "baz"}
-    pick_target(data, next_id)
+    pickers.target(data, next_id)
     local args = {action=action, target=target}
     log.info("Action picked %s", next_id)
     update_state(data, {path="combat.turn_queue:push", args=args})

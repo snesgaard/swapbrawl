@@ -17,7 +17,7 @@ end
 
 function marker:selection()
     if self.__life then
-        self:join{self.__life}
+        self:join(self.__life)
     end
     self.__life = self:fork(self.life)
 end
@@ -31,18 +31,39 @@ function marker:life()
         }
     end
 
-    self:wait(tween(0.1, self, tween_target(1.5)))
+    event:wait(tween(0.1, self, tween_target(1.5)), "finish")
 
-    self:wait(tween(0.1, self, tween_target(1.0)))
+    event:wait(tween(0.1, self, tween_target(1.0)), "finish")
 
     while true do
-        self:wait(tween(1.0, self, tween_target(0.8)))
-        self:wait(tween(0.25, self, tween_target(1.0)))
+        event:wait(tween(1.0, self, tween_target(0.8)), "finish")
+        event:wait(tween(0.25, self, tween_target(1.0)), "finish")
     end
 end
 
 function marker:test()
     self:selection()
+
+    function self:__draw()
+        self:mass_draw(vec2(0, 0), vec2(150, 0))
+    end
+end
+
+function marker:__draw(x, y)
+    if not self.__positions then return end
+    return self:mass_draw(unpack(self.__positions))
+end
+
+function marker:positions_from_actor(state, actors)
+    self.__positions = actors:map(function(id)
+        local pos = require("combat.position").get_world(state:position(), id)
+        return pos - vec2(0, 100)
+    end)
+    self:selection()
+end
+
+function marker:clear()
+    self.__positions = nil
 end
 
 function marker:mass_draw(...)
