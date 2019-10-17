@@ -1,7 +1,7 @@
 local position = {}
 
 local function get_default_center()
-    return vec2(gfx.getWidth() / 2, gfx.getHeight() / 2 + 100)
+    return vec2(gfx.getWidth() / 2, gfx.getHeight() / 2 + 300)
 end
 
 local function get_default_offset()

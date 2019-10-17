@@ -54,7 +54,7 @@ local function setup(data, party, foes)
     data.ui.target_marker = data:child(require "sfx.marker")
 
     data.ui.turn = data.ui:child(require "ui.turn_queue")
-    data.ui.turn.__transform.pos = vec2(gfx.getWidth() - 400, 100)
+    data.ui.turn.__transform.pos = vec2(gfx.getWidth() - 300, 100)
 
     remap(data.ui.turn)
 
