@@ -13,7 +13,7 @@ local function get_image(card, state, id)
         local im, atlas = card:image(state, id)
         return im, atlas or "art/props"
     else
-        log.warn("Unsupported image type <%>", type(card.image))
+        log.warn("Unsupported image type <%s>", type(card.image))
     end
 end
 
@@ -35,8 +35,9 @@ end
 
 local function get_type(state, id)
     if not state or not id then return end
-    return state:read("card/type/" .. id)
+    return state:read("cards/type/" .. id)
 end
+
 
 local card = {}
 
@@ -46,11 +47,19 @@ function card:create(state, id)
     local text = get_text(card, state, id)
     local name = get_name(card, state, id)
     local atlas = get_atlas(atlas or "art/props")
-    self.shape = spatial(atlas:get_animation("card").quad:getViewport())
-    self.shape = self.shape
+    local frame = atlas:get_frame("card")
+    self.frame = frame
+    self.shape = spatial(frame.quad:getViewport())
     self.stack = DrawStack.create()
         :reset()
-        :stack(atlas:get_animation("card"))
+        :stack(frame)
+        :within(
+            function(x, y, w, h, opt)
+                gfx.setColor(0.7, 0.8, 0.8)
+                gfx.rectangle("fill", x, y, w, h, 2)
+            end,
+            "name"
+        )
         :within(
             function(x, y, w, h)
                 gfx.setColor(0, 0, 0, 0.55)
@@ -60,17 +69,13 @@ function card:create(state, id)
             "name"
         )
         :with(
-            atlas:get_animation(im),
+            atlas:get_frame(im),
             "image"
         )
-        --:within(
-        --    draw_holder,
-        --    "image"
-        --)
         :within(
-            function(x, y, w, h)
+            function(x, y, w, h, opt)
                 gfx.setColor(0.7, 0.8, 0.8)
-                gfx.rectangle("fill", x, y, w, h)
+                gfx.rectangle("fill", x, y, w, h, 2)
             end,
             "text"
         )
@@ -78,18 +83,10 @@ function card:create(state, id)
             function(x, y, w, h)
                 gfx.setFont(font(11))
                 gfx.setColor(0, 0, 0)
-                --local text = "Deal minor damage and bleed."
-                gfx.printf(
-                    text, x + 5, y + 5, w - 10
-                )
+                gfx.printf(text, x + 5, y + 5, w - 10)
             end,
             "text"
         )
-        --:within(
-        --    draw_holder,
-        --    "text"
-        --)
-
     self.blur = moon(moon.effects.gaussianblur)
     self.blur.sigma = 3
 
@@ -131,14 +128,14 @@ function card:__draw(x, y)
             gfx.setColor(0.1, 1, 0.2)
         end
         gfx.setBlendMode("add")
-        --self.blur.draw(function()
-            --gfx.draw(self.particles, x + self.shape.w, y + self.shape.h)
-        --end)
+        self.blur.draw(function()
+            gfx.draw(self.particles, x + self.shape.w, y + self.shape.h)
+        end)
         gfx.setBlendMode("alpha")
     end
 
     gfx.setColor(1, 1, 1)
-    self.stack:draw(x, y)
+    self.stack:draw(0, 0)
 end
 
 function card:__update(dt)

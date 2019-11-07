@@ -17,7 +17,7 @@ function flash:life()
             self.scale, vec2(2, 0),
             self.color, {[4] = 0}
     ):ease(ease.inOutQuad)
-    self:wait(t)
+    event:wait(t, "finish")
     self:destroy()
 end
 

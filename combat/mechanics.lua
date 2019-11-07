@@ -5,16 +5,7 @@ end
 function mech.stamina_heal(state, args)
     local on_stamina_heal = state:read("echo/on_stamina_heal") or {}
 
-    local history = list()
     local info = {}
-
-    if not args.no_echo then
-        for i, id in ipairs(on_stamina_heal.order or {}) do
-            local f = on_stamina_heal.func[id]
-            args, info, state = f(state, id, args)
-            history[#history + 1] = make_epoch(id, state, info)
-        end
-    end
 
     local stamina = state:read("actor/stamina/" .. args.target)
     local max_stamina = state:read("actor/max_stamina/" .. args.target)
@@ -28,21 +19,13 @@ function mech.stamina_heal(state, args)
         heal = actual_heal, target = args.target,
         stamina = next_stamina
     }
-    history[#history + 1] = mech.make_epoch("stamina_healed", next_state, info)
-    return history
+    return next_state, info
 end
 
 function mech.heal(state, args)
     local on_heal = state:read("echo/on_heal") or {}
 
-    local history = list()
-    local info
-
-    for i, id in ipairs(on_heal.order or {}) do
-        local f = on_heal.func[id]
-        args, info, state = f(state, id, args)
-        history[#history + 1] = make_epoch(id, state, info)
-    end
+    local info = {}
 
     local health = state:read("actor/health/" .. args.target)
     local max_health = state:read("actor/max_health/" .. args.target)
@@ -53,8 +36,7 @@ function mech.heal(state, args)
         heal = actual_heal, target = args.target,
         health = next_health
     }
-    history[#history + 1] = mech.make_epoch("healing_done", next_state, info)
-    return history
+    return next_state, info
 end
 
 function mech.damage(state, args)

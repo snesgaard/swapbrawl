@@ -48,13 +48,17 @@ local function setup(data, party, foes)
         state = actorsetup.init_actor_state(state, id, -index, foes[index])
     end
 
+    --Node.draw_origin = true
     data.actors = data:child()
     --root.actors.__transform.scale = vec2(2, 2)
     data.ui = data:child()
     data.ui.target_marker = data:child(require "sfx.marker")
 
     data.ui.turn = data.ui:child(require "ui.turn_queue")
-    data.ui.turn.__transform.pos = vec2(gfx.getWidth() - 300, 100)
+    data.ui.turn.__transform.pos = vec2(gfx.getWidth() - 300, 500)
+
+    data.ui.card_hand = data.ui:child(require "ui.card_hand")
+    data.ui.card_hand.__transform.pos = vec2(50, gfx.getHeight() * 0.5 + 100)
 
     remap(data.ui.turn)
 
@@ -68,18 +72,28 @@ end
 local pickers = {}
 
 
-function pickers.action(data, from_target)
+function pickers.action(data, id, opt)
     -- Setup
+    local hand = opt.hand
+    if not opt.action_index then
+        data.ui.card_hand:insert(data.state, unpack(hand))
+    end
+    local index = opt.action_index or 1
+    data.ui.card_hand:fallback()
+    data.ui.card_hand:select(index)
     while true do
         local key = event:wait("inputpressed")
         if key == "left" then
-            --shift target
+            index = index <= 1 and #hand or index - 1
+            data.ui.card_hand:select(index)
         elseif key == "right" then
-            --shift target
+            index = index >= #hand and 1 or index + 1
+            data.ui.card_hand:select(index)
         elseif key == "confirm" then
+            data.ui.card_hand:trigger(true)
             -- Transition
             --return pick_target(data, action)
-            return
+            return index
         end
     end
 end
@@ -113,13 +127,15 @@ function pickers.target(data, user)
         elseif key == "confirm" then
             -- Teardown
             data.ui.target_marker:clear()
-            return action, targets
+            return 1
         elseif key == "abort" then
             -- Teardown
-            --return pick_action(data, true)
+            data.ui.target_marker:clear()
+            return
         end
     end
 end
+
 
 
 local function turn(data)
@@ -129,8 +145,22 @@ local function turn(data)
     -- TODO Need to call pick_action later
     local action = "foo"
     local target = {"bar", "baz"}
-    pickers.target(data, next_id)
-    local args = {action=action, target=target}
+    local opt = {
+        action_index = nil,
+        targets = nil,
+        hand = data.state:read(join("deck/draw_pile", next_id))
+    }
+
+    while not opt.targets do
+        opt.action_index = pickers.action(data, next_id, opt)
+        opt.targets = pickers.target(data, next_id, opt)
+    end
+
+    data.ui.card_hand:clear()
+
+    local card = data.state:read(join("cards/type", opt.hand[opt.action_index]))
+
+    local args = {action=card.name, target=target}
     log.info("Action picked %s", next_id)
     update_state(data, {path="combat.turn_queue:push", args=args})
     return turn(data)
@@ -180,6 +210,7 @@ end
 
 function flow:test(settings)
     settings.origin = true
+    settings.disable_navigation = true
 end
 
 return flow

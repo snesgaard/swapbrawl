@@ -26,6 +26,7 @@ function state._init()
     }
 
     require("combat.turn_queue").init_state(root)
+    require("combat.deck").init_state(root)
 
     for _, d in pairs(root.react) do
         d.order = list()

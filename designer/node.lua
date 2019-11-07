@@ -13,7 +13,9 @@ function love.load(arg)
     local function creation(path)
         local p = path:gsub('.lua', '')
         local t = reload(p)
-        return nodes:child(t)
+        local n = nodes:child(t)
+        nodes[p] = n
+        return n
     end
 
     for _, path in ipairs(arg) do
@@ -44,7 +46,26 @@ local combo = {value = 1, items = {'A', 'B', 'C'}}
 
 local slider_state = {value=75, min=0, max=100, step=20}
 
+local tvec = vec2(0, 0)
+
 function love.update(dt)
+    require("lovebird").update()
+    local step = dt * 100
+    if not settings.disable_navigation then
+        if love.keyboard.isDown("left") then
+            tvec.x = tvec.x + step
+        end
+        if love.keyboard.isDown("right") then
+            tvec.x = tvec.x - step
+        end
+        if love.keyboard.isDown("up") then
+            tvec.y = tvec.y + step
+        end
+        if love.keyboard.isDown("down") then
+            tvec.y = tvec.y - step
+        end
+    end
+
    --dress:Input(input, dress.layout:row())
    tween.update(dt)
    nodes:update(dt)
@@ -53,8 +74,11 @@ function love.update(dt)
    event:spin()
 end
 
+
+
 function love.draw()
     local w, h = gfx.getWidth(), gfx.getHeight()
+    gfx.translate(tvec.x, tvec.y)
     gfx.setColor(0.2, 0.3, 0.4, 1)
     gfx.rectangle("fill", 0, 0, w, h)
     gfx.setColor(1, 1, 1)

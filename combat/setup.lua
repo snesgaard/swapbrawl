@@ -2,6 +2,7 @@ local setup = {}
 local actor = require "actor"
 local position = require "combat.position"
 local animation = require "combat.animation"
+local deck = require "combat.deck"
 
 local function calc_attack_offset(atlas, offset_animation, name)
     atlas = get_atlas(atlas)
@@ -35,6 +36,14 @@ function setup.init_actor_state(state, id, place, type)
     :write(join("actor/max_stamina", id), s)
     :write(join("actor/type", id), type)
     :map("position", position.set, id, place)
+
+    local cards = {
+        "fencer.blaze_edge", "fencer.blaze_edge", "fencer.blaze_edge",
+        "fencer.blaze_edge", "fencer.blaze_edge", "fencer.blaze_edge",
+        "fencer.blaze_edge", "fencer.blaze_edge", "fencer.blaze_edge",
+        "fencer.blaze_edge",
+    }
+    state = deck.setup(state, {user=id, cards=cards})
 
     for _, key in pairs({"agility", "power"}) do
         local p = join("actor", key, id)

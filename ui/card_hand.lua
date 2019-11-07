@@ -10,9 +10,10 @@ local hand = {}
 
 function hand:test()
     local state = state.create()
-    self:select(1)
     self:insert(state, "1", "2", "3")
+    self:select(2)
     self:remove("2")
+    --self:select(1)
 end
 
 function hand:create()
@@ -62,7 +63,7 @@ function hand:insert(state, ...)
             tween_table[#tween_table + 1] = structure[i]
         end
         local tween = tween(0.25, unpack(tween_table))
-        self:wait(tween)
+        event:wait(tween, "finish")
     end
 
     self:select(self.selected)
@@ -147,8 +148,8 @@ function hand:remove(...)
     -- Remove from lookup table
 
     local function action(handle)
-        local tween = tween(0.25, unpack(tween_table))
-        handle:wait(tween)
+        local tween = tween(0.125, unpack(tween_table))
+        event:wait(tween, "finish")
         for _, n in ipairs(nodes) do
             n:destroy()
         end
@@ -224,7 +225,7 @@ function hand:remove_card(index)
 end
 
 function hand.card_pos(index)
-    return vec2(120 * (index - 1), 0)
+    return vec2(110, 0) * (index - 1)
 end
 
 function hand.build_structure(cards)

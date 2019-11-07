@@ -1,4 +1,4 @@
-require "lovedebug"
+--require "lovedebug"
 require "nodeworks"
 
 function love.load(arg)
@@ -33,7 +33,7 @@ function love.load(arg)
 end
 
 local input_from_key = {
-    left = "left", right = "right", space = "confirm", escape = "abort",
+    left = "left", right = "right", space = "confirm", backspace = "abort",
     tab = "swap"
 }
 
