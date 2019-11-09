@@ -1,38 +1,44 @@
+local position = require "combat.position"
 local anime = {}
 
 function anime.melee_attack(root, state, user, target, on_impact)
     local su = get_sprite(root, user)
-    local pu = get_player(root, user)
     local st = get_sprite(root, target)
     local pt = get_sprite(root, target)
     -- TODO: Add attack offset to this
-    local begin_pos = combat.position.get_world(state:position(), user)
+    local begin_pos = position.get_world(state:position(), user)
 
     local offset = vec2(state:read(join("actor/offset", user)) or 0, 0)
-    local final_pos = combat.position.get_world(state:position(), target)
+    local final_pos = position.get_world(state:position(), target)
     local SPEED = 500
     local dist = (final_pos - begin_pos):length()
     local time = dist / SPEED
 
-    pu:play{"dash", loop=true}
+    su:queue{"dash"}
     local t = tween(time, su.__transform.pos, final_pos - offset)
         :ease(ease.sigmoid)
     event:wait(t, "finish")
-    pu:play{"attack", "post_attack", loop=true}
+    su:queue{"attack", "post_attack"}
 
     root:fork(function()
         --if not on_impact then return end
-        local yes = event:wait(pu, "attack")
+        local yes = event:wait(su, "slice/attack")
         print("ah shit, here we go")
     end)
 
-    event:wait(pu, "finish")
+    root:fork(function()
+        while false do
+            print(event:wait(su, "loop"))
+        end
+    end)
+
+    event:wait(su, "finish")
     event:sleep(0.4)
-    pu:play{"evade", loop=true}
+    su:play{"evade"}
     local t = tween(time, su.__transform.pos, begin_pos)
         :ease(ease.sigmoid)
     event:wait(t, "finish")
-    pu:play{"idle", loop=true}
+    pu:play{"idle"}
 end
 
 function anime.append_attack(frames, animation)

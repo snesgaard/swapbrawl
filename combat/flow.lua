@@ -190,7 +190,7 @@ local function execute(data, action, user, targets)
     if next_state and epic then
         data.state = next_state
         if action.animation then
-            action.animation(broadcast, epic, user, unpack(targets))
+            action.animation(data, broadcast, epic, user, unpack(targets))
         else
             broadcast(unpack(epic))
         end

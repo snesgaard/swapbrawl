@@ -29,8 +29,6 @@ function shield:create()
 
     self.blur = moon(moon.effects.gaussianblur)
 
-    self.on_halt = event()
-
     self:fork(self.life)
     self.__transform.scale = vec2(0.5, 0.5)
 end
@@ -43,13 +41,13 @@ end
 
 function shield:life()
     local t = tween(0.3, self.radius, self.final_radius):ease(ease.outBounce)
-    self:wait(t)
+    event:wait(t, "finish")
     if not self.is_halted then
-        self:wait(self.on_halt)
+        event:wait(self, "halt")
     end
     self.border_particles:stop()
     local t = tween(0.1, self.radius, {x = 0, y = 0})
-    self:wait(t)
+    event:wait(t, "finish")
     while self.border_particles:getCount() > 0 do
         self:wait_update()
     end
@@ -58,7 +56,7 @@ end
 
 function shield:halt()
     self.is_halted = true
-    self.on_halt()
+    event(self, "halt")
 end
 
 function shield:__draw(x, y)

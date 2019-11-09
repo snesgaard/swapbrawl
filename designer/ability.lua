@@ -39,7 +39,7 @@ local function load_ability(ability_path)
     return require(ability_path:gsub('.lua', ''))
 end
 
-function love.load(arg)
+local function load(arg)
     gfx.setBackgroundColor(0, 0, 0, 0)
     nodes = Node.create()
 
@@ -59,6 +59,18 @@ function love.load(arg)
     if not ability then return end
 
     nodes.battle:execute(ability, nodes.battle.party_ids:head())
+end
+
+function love.load(arg)
+    function lurker.preswap(f)
+        f = f:gsub('.lua', '')
+        package.loaded[f] = nil
+    end
+
+    function lurker.postswap(f)
+        load(arg)
+    end
+    load(arg)
 end
 
 function love.update(dt)

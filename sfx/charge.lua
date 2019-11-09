@@ -39,7 +39,6 @@ function charge:create(pos)
             r, g, b, 0.0,
         }
     }
-    self.on_empty = event()
     self.__transform.scale = vec2(0.5, 0.5)
 end
 

@@ -1,5 +1,6 @@
 --require "lovedebug"
 require "nodeworks"
+require "combat.shortcuts"
 
 function love.load(arg)
     log.outfile = "./log.txt"
