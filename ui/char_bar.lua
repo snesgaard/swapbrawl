@@ -45,7 +45,6 @@ function charbar:create()
             }
         }
     }
-    self:rebuild()
     self.layout = self:build_layout()
 end
 
@@ -65,8 +64,9 @@ function charbar:set_hp(value, max)
     return self
 end
 
-function charbar:set_icon(icon)
-    self.icon = icon
+function charbar:icon_from_atlas(atlas, icon)
+    if not atlas then return self end
+    self.icon = get_atlas(atlas):get_frame(icon)
     return self:rebuild()
 end
 
@@ -81,68 +81,11 @@ function charbar:rebuild()
         font = font(12),
     }
 
-    self.drawstack:clear(0, 0)
-        :stack(bar)
-        :within(
-            function(x, y, w, h)
-                gfx.rectangle("fill", x, y, w, h)
-            end,
-            "icon"
-        )
-
-    if self.icon then
-        self.drawstack:with(self.icon, "icon")
-    end
-
-    self.drawstack
-        :with(overlay, "icon")
-        :within(
-            function(x, y, w, h)
-                uibar(self.hp.bar, x, y, w, h)
-            end,
-            "hp"
-        )
-        :within(
-            function(x, y, w, h)
-                uibar(self.stamina.bar, x, y, w, h)
-            end,
-            "stamina"
-        )
-        :within(
-            function(x, y, w, h)
-                suit.theme.Label("Stamina", label_opt, x, y, w, h)
-            end,
-            "stamina_label"
-        )
-        :within(
-            function(x, y, w, h)
-                suit.theme.Label(
-                    self.stamina.str.str, self.stamina.str, x, y, w, h
-                )
-            end,
-            "stamina_value"
-        )
-        :within(
-            function(x, y, w, h)
-                suit.theme.Label("Health", label_opt, x, y, w, h)
-            end,
-            "hp_label"
-        )
-        :within(
-            function(x, y, w, h)
-                suit.theme.Label(
-                    self.hp.str.str, self.hp.str, x, y, w, h
-                )
-            end,
-            "hp_value"
-        )
     return self
 end
 
 function charbar:build_layout()
-    local layout = {}
-
-
+    local layout = dict()
 
     layout.icon = spatial(0, 0, 20, 20):scale(2, 2)
 
@@ -150,24 +93,24 @@ function charbar:build_layout()
     local bar = spatial(0, 0, 64, 3):scale(2, 2)
 
     layout.name = layout.icon
-        :align(layout.icon, "left/left", "top/bottom")
+        :align(layout.icon, "left", "left", "top", "bottom")
         :move(0, 6)
 
     layout.hp_bar = bar
-        :align(layout.icon, "left/right", "top/top")
+        :align(layout.icon, "left", "right", "bottom", "top")
         :move(8, 8)
 
     layout.stamina_bar = bar
-        :align(layout.icon, "left/right", "bottom/bottom")
+        :align(layout.icon, "left", "right", "bottom", "bottom")
         :move(8, -8)
 
     layout.hp_label = label
-        :align(layout.hp_bar, "left/left", "bottom/top")
+        :align(layout.hp_bar, "left", "left", "bottom", "top")
         :move(0, -6)
     layout.hp_value = layout.hp_label:right()
 
     layout.stamina_label = label
-        :align(layout.stamina_bar, "left/left", "top/bottom")
+        :align(layout.stamina_bar, "left", "left", "top", "bottom")
         :move(0, 6)
     layout.stamina_value = layout.stamina_label:right()
 
@@ -223,8 +166,28 @@ function charbar:__draw(x, y)
 end
 
 function charbar:position(index)
-    self.__transform.pos = vec2(100, gfx.getHeight() - 100 * index)
+    return vec2(50 + 225 * (3 - index), 50)
+end
+
+function charbar:set_id(id)
+    self.id = id
     return self
+end
+
+function charbar:set_position(index)
+    self.__transform.pos = self:position(index)
+    return self
+end
+
+charbar.remap = {}
+
+charbar.remap["combat.mechanics:damage"] = function(self, state, info)
+    if self.id ~= info.target then return end
+
+    self:set_hp(
+        state:read(join("actor/health", self.id)),
+        state:read(join("actor/max_health", self.id))
+    )
 end
 
 return charbar

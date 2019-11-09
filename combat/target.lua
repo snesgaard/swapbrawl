@@ -10,7 +10,7 @@ local function get_init_target(target_data, actors)
     local friends = actors.friends
     local is_foe = actors.user_place < 0
     local friend_init = is_foe and friends:head() or friends:tail()
-    local foe_init = is_foe and foes:tail() or friends:head()
+    local foe_init = is_foe and foes:tail() or foes:head()
     if target_data.type == "self" then
         return actors.user
     elseif target_data.type == "single" then
@@ -56,6 +56,12 @@ end
 
 local target = {}
 
+function target.is_valid(state, target, target_data)
+    local should_be_alive = not target_data.alive
+    local is_alive = state:read(join("actor/health", target)) > 0
+    return is_alive == should_be_alive
+end
+
 function target.init(state, user, target_data)
     local position = state:position()
     local user_place = position[user]
@@ -64,24 +70,45 @@ function target.init(state, user, target_data)
         error(string.format("User %s not in position", user))
     end
 
-    local friends = position
+    local friends_all = position
         :filter(is_number)
         :filter(function(place)
             return place * user_place > 0
         end)
         :values()
         :sort(function(a, b) return position[a] > position[b] end)
+    local friends_valid = friends_all
+        :filter(
+            function(id) return target.is_valid(state, id, target_data) end
+        )
+    local friends_invalid = friends_all
+        :filter(
+            function(id) return not target.is_valid(state, id, target_data) end
+        )
 
-    local foes = position
+    local foes_all = position
         :filter(is_number)
         :filter(function(place)
             return place * user_place < 0
         end)
         :values()
         :sort(function(a, b) return position[a] > position[b] end)
+    local foes_valid = foes_all
+        :filter(
+            function(id) return target.is_valid(state, id, target_data) end
+        )
+    local foes_invalid = foes_all
+        :filter(
+            function(id) return not target.is_valid(state, id, target_data) end
+        )
 
     local actors = dict{
-        friends=friends, foes=foes, user=user, user_place=user_place
+        friends=friends_valid,
+        friends_invalid=friends_invalid,
+        foes=foes_valid,
+        foes_invalid=foes_invalid,
+        user=user,
+        user_place=user_place
     }
 
     actors.target = get_init_target(target_data, actors)
@@ -90,9 +117,32 @@ function target.init(state, user, target_data)
     return actors
 end
 
+function target.random(state, user, target_data)
+    local actors = target.init(state, user, target_data)
+
+    local function get_target()
+        if target_data.type == "same" then
+            return actors.friends
+        else
+            return actors.foes
+        end
+    end
+
+    local pool = get_target()
+    actors.target = pool:shuffle():head()
+
+    return target.read_all(actors)
+end
+
+function target.is_empty(actors)
+    return #actors.friends == 0 and #actors.foes == 0
+end
+
 local function swap(a, b) return b, a end
 
 local function shift_target(target_data, actors, shift)
+    if not actors.target then return end
+
     local friend_index = actors.friends:argfind(actors.target)
     local foe_index = actors.foes:argfind(actors.target)
 
@@ -130,7 +180,7 @@ function target.jump(target_data, actors)
 
     local is_foe = actors.user_place < 0
     local friend_init = is_foe and friends:head() or friends:tail()
-    local foe_init = is_foe and foes:tail() or friends:head()
+    local foe_init = is_foe and foes:tail() or foes:head()
 
     return foe_index and friend_init or foe_init
 end
@@ -149,9 +199,22 @@ end
 
 function target.read_all(actors)
     local id = actors.target
+    if not id then return list() end
     local s = actors.subtargets[id] or list()
     return list(id, unpack(s))
 end
 
+function target.retarget(state, user, target_data, target)
+    local reinit = target.init(state, user, target_data)
+    -- If target is still valid, simply resue it
+    if reinit.subtargets[target:head()] then
+        return reinit.subtargets[target:head()]
+    end
+    -- Else find out which column it belonged to and pick a random retarget
+    local is_friend = reinit.friends_invalid:argfind(target:head())
+    local candidates = is_friend and reinit.friends or reinit.foes
+    reinit.target = candidates:shuffle():head()
+    return target.read_all(reinit)
+end
 
 return target

@@ -1,10 +1,13 @@
 local actorsetup = require "combat.setup"
 local turn = require "combat.turn_queue"
 local target = require "combat.target"
+local deck = require "combat.deck"
 require "combat.update_state"
 
 local function remap(node)
     node.__remap_handle = dict()
+
+    if not node.remap then return end
 
     for key, func in pairs(node.remap or {}) do
         local function f(...) return func(node, ...) end
@@ -49,6 +52,7 @@ local function setup(data, party, foes)
     end
 
     --Node.draw_origin = true
+    data.remap = remap
     data.actors = data:child()
     --root.actors.__transform.scale = vec2(2, 2)
     data.ui = data:child()
@@ -65,6 +69,9 @@ local function setup(data, party, foes)
     for _, id in ipairs(party_ids + foes_ids) do
         actorsetup.init_actor_visual(data, state, id)
     end
+
+    data.party_ids = party_ids
+    data.foes_ids = foes_ids
 
     data.state = state
 end
@@ -99,9 +106,15 @@ function pickers.action(data, id, opt)
 end
 
 
-function pickers.target(data, user)
-    local target_data_dummy = {type="self", side="other"}
-    local actor_data = target.init(data.state, user, target_data_dummy)
+function pickers.target(data, user, opt)
+    local action_id = opt.hand[opt.action_index]
+    local action = deck.get(data.state, action_id)
+    if not action or not action.target then
+        error("Action unknown or no target data")
+    end
+
+    local target_data = action.target
+    local actor_data = target.init(data.state, user, target_data)
     data.ui.target_marker:positions_from_actor(
         data.state, target.read_all(actor_data)
     )
@@ -110,24 +123,24 @@ function pickers.target(data, user)
     while true do
         local key = event:wait("inputpressed")
         if key == "left" then
-            actor_data.target = target.left(target_data_dummy, actor_data)
+            actor_data.target = target.left(target_data, actor_data)
             data.ui.target_marker:positions_from_actor(
                 data.state, target.read_all(actor_data)
             )
         elseif key == "right" then
-            actor_data.target = target.right(target_data_dummy, actor_data)
+            actor_data.target = target.right(target_data, actor_data)
             data.ui.target_marker:positions_from_actor(
                 data.state, target.read_all(actor_data)
             )
         elseif key == "swap" then
-            actor_data.target = target.jump(target_data_dummy, actor_data)
+            actor_data.target = target.jump(target_data, actor_data)
             data.ui.target_marker:positions_from_actor(
                 data.state, target.read_all(actor_data)
             )
         elseif key == "confirm" then
             -- Teardown
             data.ui.target_marker:clear()
-            return 1
+            return target.read_all(actor_data)
         elseif key == "abort" then
             -- Teardown
             data.ui.target_marker:clear()
@@ -160,22 +173,43 @@ local function turn(data)
 
     local card = data.state:read(join("cards/type", opt.hand[opt.action_index]))
 
-    local args = {action=card.name, target=target}
-    log.info("Action picked %s", next_id)
+    local args = {action=card, target=opt.targets}
+    log.info("Action picked %s %s %s", next_id, card.name, tostring(opt.targets))
     update_state(data, {path="combat.turn_queue:push", args=args})
     return turn(data)
 end
 
+local function execute(data, action, user, targets)
+    if not action.transform then return end
 
+    log.info("Executing %s for %s", action.name, user)
+    local t = action.transform
+    local next_state, epic = data.state:transform(
+        t(data.state, user, unpack(targets))
+    )
+    if next_state and epic then
+        data.state = next_state
+        if action.animation then
+            action.animation(broadcast, epic, user, unpack(targets))
+        else
+            broadcast(unpack(epic))
+        end
+    end
+    log.info("Execution completed")
+end
 
-local function execute(data)
+local function execute_queue(data)
     local next_action = require("combat.turn_queue").next_action(data.state)
     if not next_action then return end
 
+    -- TODO retargeting
+    -- TODO Transform action
     log.info("Executing action %s", next_action.id)
+    execute(data, next_action.action, next_action.id, next_action.target)
+
     update_state(data, {path="combat.turn_queue:pop"})
 
-    return execute(data)
+    return execute_queue(data)
 end
 
 local function round(data)
@@ -183,34 +217,32 @@ local function round(data)
     update_state(data, {path="combat.turn_queue:new_turn"})
     -- Select actions
     turn(data)
-    execute(data)
+    execute_queue(data)
 end
 
 local flow = {}
 
-function flow:create()
-    local party = list("fencer", "alchemist", "mage")
-    local foes = list("vampire", "vampress")
-    self.data = Node.create()
-    setup(self.data, party, foes)
-    self:fork(self.combat)
+function flow:create(party, foes)
+    party = party or list("fencer", "vampress", "alchemist")
+    foes = foes or list("vampire")
+    setup(self, party, foes)
 end
 
 function flow:combat()
-    round(self.data)
+    round(self)
 end
 
-function flow:__update(dt)
-    self.data:update(dt)
-end
-
-function flow:__draw(x, y)
-    self.data:draw(x, y)
+function flow:execute(action, user, targets)
+    if not targets then
+        targets = target.random(self.state, user, action.target)
+    end
+    return self:fork(execute, action, user, targets)
 end
 
 function flow:test(settings)
     settings.origin = true
     settings.disable_navigation = true
+    self:fork(self.combat)
 end
 
 return flow

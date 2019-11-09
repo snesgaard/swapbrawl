@@ -33,7 +33,6 @@ function animation_post.attack(api, frames, animation)
 end
 
 
-
 function fencer.basestats()
     return {
         health = 10,
@@ -41,5 +40,26 @@ function fencer.basestats()
         agility = 4,
     }
 end
+
+local combo = {
+    root = {"potion", "slash1", "jab1", "defend"},
+
+    slash1 = {"slash2", "jab1", "potion"},
+    slash2 = {"round_slash", "jab2", "potion"},
+    round_slash = {},
+
+    jab1 = {"potion", "jab2"},
+    jab2 = {"potion", "kick"},
+    kick = {},
+
+    backhop = {"flying_kick", "triple_trouble"},
+}
+
+
+for _, key in ipairs{"slash1", "slash2", "round_slash", "jab1", "jab2", "kick"} do
+    combo[key] = List.insert(combo[key], "backhop")
+end
+
+fencer.combo = {graph=combo, init="root"}
 
 return fencer

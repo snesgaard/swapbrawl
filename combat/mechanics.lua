@@ -1,3 +1,5 @@
+local mech = {}
+
 function mech.identity(id, state, info)
     return make_history(id, state, info)
 end
@@ -44,25 +46,13 @@ function mech.damage(state, args)
         error("There must be a user defined!")
     end
     -- TODO perform initial stat calculation here
-    args = args:set("real_damage", args.damage)
-
-    local on_damage = state:read("echo/on_damage")
-
-    local history = list()
-    local info
-    -- Reactions goes here
-    for i, id in ipairs(on_damage.order or {}) do
-        local f = on_damage.func[id]
-        args, info, state = f(state, id, args)
-        history[#history + 1] = make_epoch(id, state, info)
-    end
+    args = Dictionary.set(args, "real_damage", args.damage or 0)
 
     -- Final state damage calculation
-
     local charged = state:read("actor/charge/" .. args.user)
     local shielded = state:read("actor/shield/" .. args.target)
 
-    local health = state:read("actor/health/" .. args.target)
+    local health = state:read("actor/health/" .. args.target) or 0
     local actual_damage = math.min(health, args.real_damage)
     actual_damage = charged and actual_damage * 2 or actual_damage
     actual_damage = shielded and actual_damage * 0 or actual_damage
@@ -78,9 +68,7 @@ function mech.damage(state, args)
     state = state:write("actor/shield/" .. args.target, false)
     state = state:write("actor/charge/" .. args.user, false)
 
-    history[#history + 1] = make_epoch("damage_dealt", state, info)
-
-    return history
+    return state, info
 end
 
 function mech.true_damage(state, args)
@@ -93,9 +81,8 @@ function mech.true_damage(state, args)
         health = next_health
     }
     state = state:write("actor/health/" .. args.target, next_health)
-    history[#history + 1] = make_epoch("damage_dealt", state, info)
 
-    return history
+    return state, info
 end
 
 function mech.ailment_damage(state, args)

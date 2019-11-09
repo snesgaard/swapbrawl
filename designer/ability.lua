@@ -1,5 +1,3 @@
-local core = require "combat.core"
-deck = require "combat.deck"
 
 local function default_pick_user(state)
     return state:position()
@@ -35,55 +33,41 @@ local function pick_target(ability, state, user, target_list)
     end
 end
 
+local function load_ability(ability_path)
+    if not ability_path then return end
+
+    return require(ability_path:gsub('.lua', ''))
+end
+
 function love.load(arg)
     gfx.setBackgroundColor(0, 0, 0, 0)
     nodes = Node.create()
-    nodes.battle = nodes:child(core)
 
-    local ability_path = arg[1]
-
-    local ability = require(ability_path:gsub('.lua', ''))
-
-    local user_type = ability.__user_type and ability.__user_type() or "fencer"
 
     function actor(t)
         return {type = t}
     end
 
-    nodes.battle:setup_battle(
-        list(user_type, "vampire", "vampress"):map(actor),
-        list("mage", "alchemist"):map(actor)
+    local ability = load_ability(arg[1])
+
+    nodes.battle = nodes:child(
+        require("combat.flow"),
+        list("fencer", "vampire", "vampress"),
+        list("mage", "alchemist")
     )
 
-    local state = nodes.battle.state
+    if not ability then return end
 
-    local user = pick_user(ability, state)
-
-    local target_list, secondary = get_target_list(ability, state, user)
-
-    secondary = secondary or function() end
-
-    local target = pick_target(ability, state, user, target_list)
-
-
-
-    local s = secondary(
-        state, target,
-        target_list:filter(function(id) return id ~= target end)
-    )
-
-    if type(s) == "table" then
-        nodes.battle:execute(
-            user, ability, target, unpack(s)
-        )
-    else
-        nodes.battle:execute(user, ability, target, s)
-    end
+    nodes.battle:execute(ability, nodes.battle.party_ids:head())
 end
 
 function love.update(dt)
+    require("lovebird").update()
     tween.update(dt)
     nodes:update(dt)
+    lurker:update(dt)
+    event:update(dt)
+    event:spin()
 end
 
 function love.draw()

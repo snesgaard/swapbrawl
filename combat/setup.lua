@@ -92,12 +92,14 @@ function setup.init_actor_visual(root, state, id)
     root.actors[id] = actor_root
 
     -- Setup ui, if in party
-    if state:position(id) > 0 and false then
+    if state:position(id) > 0 then
         root.ui[id] = root.ui:child(require "ui.char_bar")
-            :position(state:position(id))
-            :set_icon(data.icon and data.icon())
+            :set_position(state:position(id))
             :set_hp(state:health(id))
             :set_stamina(state:stamina(id))
+            :icon_from_atlas(unpack(data.icon or {}))
+            :set_id(id)
+        root.remap(root.ui[id])
     end
 
     if data.attack_offset then
