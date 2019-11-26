@@ -178,12 +178,6 @@ function deck.setup(state, args)
     local user = args.user
     local cards = args.cards
 
-    local hand, draw, discard = get_user_card(state, user)
-
-    for _, id in ipairs(hand + draw + discard) do
-        id_gen.unregister(id)
-    end
-
     local next_draw = list()
 
     local next_state = state
@@ -192,13 +186,9 @@ function deck.setup(state, args)
         return require("cards." .. p)
     end)
 
-    for _, card in ipairs(cards) do
-        next_state, next_draw[#next_draw + 1] = deck.create(next_state, card)
-    end
-
-    local info = {draw_pile = next_draw}
+    local info = {draw_pile = cards}
     next_state = set_user_card(
-        next_state, user, list(), next_draw, list()
+        next_state, user, list(), cards, list()
     )
 
     return next_state, info

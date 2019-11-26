@@ -85,63 +85,12 @@ function mech.true_damage(state, args)
     return state, info
 end
 
-function mech.ailment_damage(state, args)
-    local on_ailment_damage = state:read("echo/on_ailment_damage") or {}
+function mech.end_of_turn()
 
-    local history = list()
-    -- Reactions goes here
-    for i, id in ipairs(on_ailment_damage) do
-        local f = on_ailment_damage.func[id]
-        args, info, state = f(state, id, args)
-        history[#history + 1] = make_epoch(id, state, info)
-    end
-
-    local target = args.target
-    local ailment = args.ailment
-    local dmg = args.damage
-
-    local function format_path(target, dst)
-        return string.format("ailment/%s/%s/%s", ailment, dst, target)
-    end
-
-    local res = state:read(format_path(target, "resistance")) or 1
-    local damage = state:read(format_path(target, "damage")) or 0
-
-    local function handle_damage()
-        damage = damage + dmg
-        if damage >= res then
-            local duration = args.duration or 3
-            -- Increase resistance (consider doubling instead maybe)
-            res = res + 1
-            local next_state = state
-                :write(format_path(target, "resistance"), res)
-                :write(format_path(target, "damage"), 0)
-                :write(format_path(target, "duration"), duration)
-            local info = dict{
-                target = args.target, ailment = args.ailment, success = true,
-            }
-            return next_state, info
-        else
-            local next_state = state:write(
-                format_path(target, "damage"), damage
-            )
-
-            local info = dict{
-                target = args.target, ailment = args.ailment, success = false,
-            }
-            return next_state, info
-        end
-    end
-
-    history[#history + 1] = make_epoch("ailment_damage", handle_damage())
-
-    -- Insert reactions after this
-    return history
 end
 
 function mech.charge(state, args)
     args.charge = args.charge or true
-    local state, history = mech.invoke_echo(state, args, "echo/on_charge")
 
     local charge = state:read("actor/charge/" .. args.target)
     local next_state = state:write("actor/charge/" .. args.target, args.charge)
@@ -152,14 +101,11 @@ function mech.charge(state, args)
         removed = charge and not args.charge
     }
 
-    history[#history + 1] = make_epoch("charged", next_state, info)
-
-    return history
+    return next_state, info
 end
 
 function mech.shield(state, args)
     args.shield = args.shield or true
-    local state, history = mech.invoke_echo(state, args, "echo/on_shield")
 
     local shield = state:read("actor/shield/" .. args.target)
     local next_state = state:write("actor/shield/" .. args.target, args.shield)
@@ -170,9 +116,7 @@ function mech.shield(state, args)
         removed = shield and not args.shield
     }
 
-    history[#history + 1] = make_epoch("shielded", next_state, info)
-
-    return history
+    return next_state, info
 end
 
 function mech.tail_state(epic, state)

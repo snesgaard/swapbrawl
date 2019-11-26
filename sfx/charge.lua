@@ -39,7 +39,7 @@ function charge:create(pos)
             r, g, b, 0.0,
         }
     }
-    self.__transform.scale = vec2(0.5, 0.5)
+    self.__transform.scale = vec2(1, 1)
 end
 
 function charge:halt()

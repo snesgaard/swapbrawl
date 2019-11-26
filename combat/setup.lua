@@ -3,6 +3,7 @@ local actor = require "actor"
 local position = require "combat.position"
 local animation = require "combat.animation"
 local deck = require "combat.deck"
+local combo = require "combat.combotree"
 
 local function calc_attack_offset(atlas, offset_animation, name)
     atlas = get_atlas(atlas)
@@ -36,14 +37,7 @@ function setup.init_actor_state(state, id, place, type)
     :write(join("actor/max_stamina", id), s)
     :write(join("actor/type", id), type)
     :map("position", position.set, id, place)
-
-    local cards = {
-        "fencer.blaze_edge", "fencer.blaze_edge", "fencer.blaze_edge",
-        "fencer.blaze_edge", "fencer.blaze_edge", "fencer.blaze_edge",
-        "fencer.blaze_edge", "fencer.blaze_edge", "fencer.blaze_edge",
-        "fencer.blaze_edge",
-    }
-    state = deck.setup(state, {user=id, cards=cards})
+    :map(join("combo", id), combo.init, data.combo or {})
 
     for _, key in pairs({"agility", "power"}) do
         local p = join("actor", key, id)
@@ -74,6 +68,7 @@ function setup.init_actor_visual(root, state, id)
 
     -- Setup sprite
     local actor_root = root.actors:child()
+    local _, place = position.pairget(state:position(), id)
 
     if data.atlas and data.animations then
         actor_root.sprite = actor_root:child(
@@ -87,19 +82,24 @@ function setup.init_actor_visual(root, state, id)
             state:position(), id
         )
         actor_root.sprite:queue({"idle"})
+        if math.abs(place) > 3 then
+            actor_root.sprite:hide()
+        end
     end
 
     root.actors[id] = actor_root
 
     -- Setup ui, if in party
     if state:position(id) > 0 then
-        root.ui[id] = root.ui:child(require "ui.char_bar")
+        local uitype = require "ui.char_bar"
+        root.ui[id] = root.ui:child(uitype)
             :set_position(state:position(id))
             :set_hp(state:health(id))
             :set_stamina(state:stamina(id))
             :icon_from_atlas(unpack(data.icon or {}))
             :set_id(id)
-        root.remap(root.ui[id])
+        root.ui[id]:color_from_place(place)
+        remap(root.ui[id])
     end
 
     if data.attack_offset then

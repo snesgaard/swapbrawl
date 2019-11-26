@@ -9,13 +9,32 @@ card.name = "Blazing Edge"
 card.target = {type="single", side="other"}
 
 function card.transform(state, user, target)
-    return {path="combat.mechanics:damage", args={damage=2, user=user, target=target}}
+    local t = list(
+        {
+            path="combat.mechanics:damage",
+            args={damage=2, user=user, target=target}
+        },
+        {
+            path="combat.mechanics:charge",
+            args={charge=true, target=user}
+        },
+        {
+            path="combat.mechanics:shield",
+            args={shield=true, target=user}
+        }
+    )
+    return unpack(t)
 end
 
-function card.animation(root, broadcast, epic, user, target)
+function card.animation(root, epic, user, target)
     local init_epoch = List.head(epic)
-    print(root)
-    animation.melee_attack(root, init_epoch.state, user, target)
+
+    local opt = {}
+    function opt.on_impact(hitbox)
+        root:broadcast(unpack(epic))
+    end
+
+    animation.melee_attack(root, init_epoch.state, user, opt, target)
 end
 
 return card

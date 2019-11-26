@@ -39,6 +39,10 @@ local function load_ability(ability_path)
     return require(ability_path:gsub('.lua', ''))
 end
 
+local function split_path(path)
+    return unpack(string.split(path, ':'))
+end
+
 local function load(arg)
     gfx.setBackgroundColor(0, 0, 0, 0)
     nodes = Node.create()
@@ -48,17 +52,24 @@ local function load(arg)
         return {type = t}
     end
 
-    local ability = load_ability(arg[1])
+    local actor_path, action_name = split_path(arg[1])
 
     nodes.battle = nodes:child(
         require("combat.flow"),
-        list("fencer", "vampire", "vampress"),
+        list(actor_path, "vampire", "vampress"),
         list("mage", "alchemist")
     )
 
-    if not ability then return end
+    if not action_name then return end
 
-    nodes.battle:execute(ability, nodes.battle.party_ids:head())
+    local type_info = require("actor." .. actor_path)
+
+    local actions = type_info.actions or {}
+    local action = actions[action_name]
+
+    if not action then return end
+
+    nodes.battle:execute(action, nodes.battle.party_ids:head())
 end
 
 function love.load(arg)

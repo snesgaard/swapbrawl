@@ -23,11 +23,11 @@ function hand:create()
     self.anime_queue = self:child(action_queue)
 end
 
-function hand:insert(state, ...)
-    local ids = list(...)
-    local nodes = ids:map(
-        function(id)
-            local c = self:child(card, state, id)
+function hand:insert(...)
+    local card_types = list(...)
+    local nodes = card_types:map(
+        function(type)
+            local c = self:child(card, type)
             function c:__draworder(x, y, ...)
                 self:__childdraw(0, 0)
                 self:__draw(0, 0, ...)
@@ -38,10 +38,9 @@ function hand:insert(state, ...)
     )
 
     for i, n in ipairs(nodes) do
-        local id = ids[i]
         n.__transform.pos.x = n.__transform.pos.x + i
-        self.cardids[n] = id
-        self.cardids[id] = n
+        self.cardids[n] = i
+        self.cardids[i] = n
     end
 
     if #nodes <= 0 then return end

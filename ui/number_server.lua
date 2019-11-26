@@ -52,8 +52,8 @@ function DamageNumber.animate(self)--
         self.opt.color.normal.fg, {[4] = 1},
         self, {scale = self.end_scale}
     )
-    self:wait(num_tween)
-    self:wait(1)
+    event:wait(num_tween, "finish")
+    event:sleep(1)
     local spatial = self.spatial
     --[[
     tween = timer.tween(0.25, {
@@ -66,7 +66,7 @@ function DamageNumber.animate(self)--
         self.opt.color.normal.fg, {[4] = 0},
         self.spatial, spatial:move(0, -50)
     )
-    self:wait(num_tween)
+    event:wait(num_tween, "finish")
     self:remove()
 end
 
@@ -173,6 +173,26 @@ function DamageNumberServer:__draw(x, y, r)
     for _, number in ipairs(self.draworder) do
         number:draw(self.x[number] + x, self.y[number] + y, r)
     end
+end
+
+DamageNumberServer.remap = {}
+
+DamageNumberServer.remap["combat.mechanics:damage"] = function(
+        self, state, info, args, root
+)
+    local sprite = get_sprite(root, info.target)
+    local n = root:child()
+    local p = sprite:shape():center()
+    self:damage(p, info)
+end
+
+DamageNumberServer.remap["combat.mechanics:heal"] = function(
+        self, state, info, args, root
+)
+    local sprite = get_sprite(root, info.target)
+    local n = root:child()
+    local p = sprite:shape():center()
+    self:heal(p, info)
 end
 
 return DamageNumberServer

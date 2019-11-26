@@ -27,6 +27,8 @@ function state._init()
 
     require("combat.turn_queue").init_state(root)
     require("combat.deck").init_state(root)
+    require("combat.combotree").init_state(root)
+    require("combat.ai").init_state(root)
 
     for _, d in pairs(root.react) do
         d.order = list()
@@ -39,6 +41,12 @@ function state._init()
     end
 
     return root
+end
+
+function state:type(id)
+    local type_path = self:read(join("actor/type", id))
+    print(id, type_path)
+    return require("actor." .. type_path)
 end
 
 -- Utility functions

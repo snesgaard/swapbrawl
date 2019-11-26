@@ -2,9 +2,10 @@ local actorsetup = require "combat.setup"
 local turn = require "combat.turn_queue"
 local target = require "combat.target"
 local deck = require "combat.deck"
+local combo = require "combat.combotree"
 require "combat.update_state"
 
-local function remap(node)
+function remap(node)
     node.__remap_handle = dict()
 
     if not node.remap then return end
@@ -24,15 +25,21 @@ local function remap(node)
     end
 end
 
-local function broadcast(...)
+local function actor_order(a, b)
+    local ax = a.__transform.pos.x - (a.priority and 2000 or 0)
+    local bx = b.__transform.pos.x - (b.priority and 2000 or 0)
+    return ax > bx
+end
+
+local function broadcast(root, ...)
     for key, epoch in pairs({...}) do
-        event(epoch.id, epoch.state, epoch.info, epoch.args)
+        event(epoch.id, epoch.state, epoch.info, epoch.args, root)
     end
 end
 
 local function update_state(data, ...)
     local state, epic = data.state:transform(...)
-    broadcast(unpack(epic))
+    broadcast(data, unpack(epic))
     data.state = state
     return state, epic
 end
@@ -52,19 +59,24 @@ local function setup(data, party, foes)
     end
 
     --Node.draw_origin = true
-    data.remap = remap
     data.actors = data:child()
+    data.actors:set_order(actor_order)
+    data.sfx = data:child()
     --root.actors.__transform.scale = vec2(2, 2)
     data.ui = data:child()
+    data.ui.number_server = data.ui:child(require "ui.number_server")
     data.ui.target_marker = data:child(require "sfx.marker")
 
     data.ui.turn = data.ui:child(require "ui.turn_queue")
-    data.ui.turn.__transform.pos = vec2(gfx.getWidth() - 300, 500)
+    data.ui.turn.__transform.pos = vec2(gfx.getWidth() - 400, gfx.getHeight() * 0.25)
 
-    data.ui.card_hand = data.ui:child(require "ui.card_hand")
-    data.ui.card_hand.__transform.pos = vec2(50, gfx.getHeight() * 0.5 + 100)
+    data.ui.command = data.ui:child(require "ui.key_cross")
 
+    data.ui.command.__transform.pos = vec2(gfx.getWidth() * 0.35, 150)
+
+    remap(data)
     remap(data.ui.turn)
+    remap(data.ui.number_server)
 
     for _, id in ipairs(party_ids + foes_ids) do
         actorsetup.init_actor_visual(data, state, id)
@@ -74,6 +86,8 @@ local function setup(data, party, foes)
     data.foes_ids = foes_ids
 
     data.state = state
+
+
 end
 
 local pickers = {}
@@ -81,34 +95,17 @@ local pickers = {}
 
 function pickers.action(data, id, opt)
     -- Setup
-    local hand = opt.hand
-    if not opt.action_index then
-        data.ui.card_hand:insert(data.state, unpack(hand))
-    end
-    local index = opt.action_index or 1
-    data.ui.card_hand:fallback()
-    data.ui.card_hand:select(index)
     while true do
-        local key = event:wait("inputpressed")
-        if key == "left" then
-            index = index <= 1 and #hand or index - 1
-            data.ui.card_hand:select(index)
-        elseif key == "right" then
-            index = index >= #hand and 1 or index + 1
-            data.ui.card_hand:select(index)
-        elseif key == "confirm" then
-            data.ui.card_hand:trigger(true)
-            -- Transition
-            --return pick_target(data, action)
-            return index
-        end
+        local key = event:wait("keypressed")
+        key = key:upper()
+        local action = opt.combo[key]
+        if action then return key end
     end
 end
 
 
 function pickers.target(data, user, opt)
-    local action_id = opt.hand[opt.action_index]
-    local action = deck.get(data.state, action_id)
+    local action = opt.combo[opt.action]
     if not action or not action.target then
         error("Action unknown or no target data")
     end
@@ -149,40 +146,92 @@ function pickers.target(data, user, opt)
     end
 end
 
+local function default_ability(path)
+    local parts = string.split(path, '.')
+    return {
+        name=parts[#parts], target={type="single", side="other"}
+    }
+end
 
+local function load_ability(type_info, path)
+    print("typeinfo", path)
+    local actions = type_info.actions or {}
+    return actions[path] or default_ability(path)
+end
 
-local function turn(data)
-    local next_id = require("combat.turn_queue").next_pending(data.state)
-    if not next_id then return end
+local function ai_turn(data, next_id)
+    local ai = require "combat.ai"
+    local next_ai_state, action, targets = ai.update(data.state, next_id)
+    data.state = ai.write_state(data.state, next_id, next_ai_state)
+    action = load_ability(data.state:type(next_id), action)
 
+    local args = {action=action, target=targets}
+    log.info(
+        "Action picked %s %s %s", next_id, action.name, tostring(targets)
+    )
+    print(data.state)
+    update_state(data, {path="combat.turn_queue:push", args=args})
+end
+
+local function player_turn(data, next_id)
     -- TODO Need to call pick_action later
     local action = "foo"
     local target = {"bar", "baz"}
     local opt = {
         action_index = nil,
         targets = nil,
-        hand = data.state:read(join("deck/draw_pile", next_id))
+        hand = data.state:read(join("deck/draw_pile", next_id)),
     }
 
+    local type_info = data.state:type(next_id)
+    local combo_path = dict(combo.get_actions(data.state, next_id))
+    print("path", combo_path)
+
+    opt.combo = combo_path:map(curry(load_ability, type_info))
+
+    local combo_text = opt.combo
+        :map(function(data)
+            return data.name or "FooBar"
+        end)
+    data.ui.command:set_text(combo_text)
+    data.ui.command:show()
+
     while not opt.targets do
-        opt.action_index = pickers.action(data, next_id, opt)
+        data.ui.command:select()
+        opt.action = pickers.action(data, next_id, opt)
+        data.ui.command:select(opt.action)
         opt.targets = pickers.target(data, next_id, opt)
     end
 
-    data.ui.card_hand:clear()
+    data.ui.command:select()
+    data.ui.command:hide()
+    local action = opt.combo[opt.action]
 
-    local card = data.state:read(join("cards/type", opt.hand[opt.action_index]))
-
-    local args = {action=card, target=opt.targets}
-    log.info("Action picked %s %s %s", next_id, card.name, tostring(opt.targets))
+    local args = {action=action, target=opt.targets, key=opt.action}
+    log.info("Action picked %s %s %s", next_id, action.name, tostring(opt.targets))
     update_state(data, {path="combat.turn_queue:push", args=args})
+end
+
+local function turn(data)
+    local next_id = require("combat.turn_queue").next_pending(data.state)
+    if not next_id then return end
+    local place =  data.state:position(next_id)
+    if place > 0 then
+        player_turn(data, next_id)
+    else
+        ai_turn(data, next_id)
+    end
     return turn(data)
 end
 
-local function execute(data, action, user, targets)
+
+local function execute(data, action, user, targets, key)
+    if key then
+        data.state = data.state:map(join("combo", user), combo.traverse, key)
+    end
     if not action.transform then return end
 
-    log.info("Executing %s for %s", action.name, user)
+    log.info("Executing %s for %s -> %s", action.name, user, key)
     local t = action.transform
     local next_state, epic = data.state:transform(
         t(data.state, user, unpack(targets))
@@ -190,9 +239,10 @@ local function execute(data, action, user, targets)
     if next_state and epic then
         data.state = next_state
         if action.animation then
-            action.animation(data, broadcast, epic, user, unpack(targets))
+            data:focus_actor(user)
+            action.animation(data, epic, user, unpack(targets))
         else
-            broadcast(unpack(epic))
+            data:broadcast(unpack(epic))
         end
     end
     log.info("Execution completed")
@@ -205,7 +255,10 @@ local function execute_queue(data)
     -- TODO retargeting
     -- TODO Transform action
     log.info("Executing action %s", next_action.id)
-    execute(data, next_action.action, next_action.id, next_action.target)
+    execute(
+        data, next_action.action, next_action.id, next_action.target,
+        next_action.key
+    )
 
     update_state(data, {path="combat.turn_queue:pop"})
 
@@ -217,19 +270,22 @@ local function round(data)
     update_state(data, {path="combat.turn_queue:new_turn"})
     -- Select actions
     turn(data)
+    --event:sleep(1.0)
     execute_queue(data)
 end
 
 local flow = {}
 
 function flow:create(party, foes)
-    party = party or list("fencer", "vampress", "alchemist")
-    foes = foes or list("vampire")
+    party = party or list("fencer")
+    foes = foes or list("golem")
     setup(self, party, foes)
 end
 
 function flow:combat()
-    round(self)
+    while true do
+        round(self)
+    end
 end
 
 function flow:execute(action, user, targets)
@@ -239,10 +295,58 @@ function flow:execute(action, user, targets)
     return self:fork(execute, action, user, targets)
 end
 
+flow.broadcast = broadcast
+
+function flow:focus_actor(id)
+    local n = self.actors[id]
+    if not n then
+        log.warn("No actor name %s", id)
+        return
+    end
+    for _, node in pairs(self.actors) do
+        -- TODO could probably be faster
+        if type(node) == "table" then
+            node.priority = nil
+        end
+    end
+    n.priority = true
+    self.actors:__make_order()
+end
+
 function flow:test(settings)
     settings.origin = true
     settings.disable_navigation = true
     self:fork(self.combat)
+end
+
+flow.remap = {}
+
+flow.remap["combat.mechanics:damage"] = function(self, state, info)
+    local sprite = get_sprite(self, info.target)
+    sprite:shake()
+end
+
+flow.remap["combat.mechanics:shield"] = function(self, state, info, args)
+    local sprite = get_sprite(self, info.target)
+    if info.shielded and not sprite.shield then
+        sprite.shield = sprite:child(require "sfx.shield")
+    end
+    if info.removed and sprite.shield then
+        sprite.shield:halt()
+        sprite.shield = nil
+    end
+end
+
+
+flow.remap["combat.mechanics:charge"] = function(self, state, info, args)
+    local sprite = get_sprite(self, info.target)
+    if info.charged and not sprite.charge then
+        sprite.charge = sprite:child(require "sfx.charge")
+    end
+    if info.remove and sprite.charge then
+        sprite.charge:halt()
+        sprite.charge = nil
+    end
 end
 
 return flow

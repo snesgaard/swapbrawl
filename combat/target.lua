@@ -59,7 +59,8 @@ local target = {}
 function target.is_valid(state, target, target_data)
     local should_be_alive = not target_data.alive
     local is_alive = state:read(join("actor/health", target)) > 0
-    return is_alive == should_be_alive
+    local _, place = combat_position.pairget(state:position(), target)
+    return is_alive == should_be_alive and math.abs(place) <= 3
 end
 
 function target.init(state, user, target_data)

@@ -133,13 +133,50 @@ local label_opt = {
     }
 }
 
+local COLORS = {
+    vanguard = {0, 0, 0.2, 0.3},
+    cooldown = {0.2, 0.2, 0.2, 0.3},
+    reserve = {0.6, 0, 0, 0.3}
+}
+
+function charbar:color_from_place(place)
+    self.color = place > 3 and COLORS.reserve or COLORS.vanguard
+    return self
+end
+
+function charbar:progress(prog)
+    self.prog = prog
+    return self
+end
+
 function charbar:__draw(x, y)
     --self.drawstack:draw(x, y + 100)
-    gfx.setColor(0, 0, 0.2, 0.3)
-    gfx.rectangle(
-        "fill", self.layout.bound.x, self.layout.bound.y,
-        self.layout.bound.w, self.layout.bound.h, 10
-    )
+    local prog = self.prog or 1.0
+    if prog < 1.0 then
+        gfx.stencil(function()
+            local x, y, w, h = self.layout.bound:unpack()
+            gfx.rectangle("fill", x, y, w * prog, h, 10)
+        end, "replace", 1)
+        gfx.setStencilTest("equal", 1)
+        gfx.setColor(unpack(self.color))
+        gfx.rectangle(
+            "fill", self.layout.bound.x, self.layout.bound.y,
+            self.layout.bound.w, self.layout.bound.h, 10
+        )
+        gfx.setStencilTest("equal", 0)
+        gfx.setColor(unpack(COLORS.cooldown))
+        gfx.rectangle(
+            "fill", self.layout.bound.x, self.layout.bound.y,
+            self.layout.bound.w, self.layout.bound.h, 10
+        )
+        gfx.setStencilTest()
+    else
+        gfx.setColor(unpack(self.color or COLORS.reserve))
+        gfx.rectangle(
+            "fill", self.layout.bound.x, self.layout.bound.y,
+            self.layout.bound.w, self.layout.bound.h, 10
+        )
+    end
 
     gfx.setColor(1, 1, 1)
     if self.icon then
@@ -166,7 +203,12 @@ function charbar:__draw(x, y)
 end
 
 function charbar:position(index)
-    return vec2(50 + 225 * (3 - index), 50)
+    local oy = -200
+    if index <= 3 then
+        return vec2(50 + 225 * (3 - index), gfx.getHeight() + oy)
+    else
+        return vec2(50 + 225 * (5 - index), gfx.getHeight() + oy + 100)
+    end
 end
 
 function charbar:set_id(id)

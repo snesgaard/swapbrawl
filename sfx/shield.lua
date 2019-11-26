@@ -3,7 +3,7 @@ local shield = {}
 function shield:create()
     local shield_part = get_icon("part", "art/props")
     self.radius = dict{x = 0, y = 0}
-    self.final_radius = dict{x = 75, y = 115}
+    self.final_radius = dict{x = 125, y = 210}
 
     self.border_particles = particles{
         image = shield_part.image,
@@ -17,7 +17,7 @@ function shield:create()
             "borderellipse", self.final_radius.x, self.final_radius.y, 0, true
         },
         acceleration = {0, -30},
-        size = 0.35,
+        size = 0.7,
         speed = 50,
         color = {
             0.5, 0.6, 1, 0.5,
