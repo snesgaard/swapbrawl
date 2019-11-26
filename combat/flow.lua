@@ -154,7 +154,6 @@ local function default_ability(path)
 end
 
 local function load_ability(type_info, path)
-    print("typeinfo", path)
     local actions = type_info.actions or {}
     return actions[path] or default_ability(path)
 end
@@ -169,7 +168,6 @@ local function ai_turn(data, next_id)
     log.info(
         "Action picked %s %s %s", next_id, action.name, tostring(targets)
     )
-    print(data.state)
     update_state(data, {path="combat.turn_queue:push", args=args})
 end
 
@@ -185,7 +183,6 @@ local function player_turn(data, next_id)
 
     local type_info = data.state:type(next_id)
     local combo_path = dict(combo.get_actions(data.state, next_id))
-    print("path", combo_path)
 
     opt.combo = combo_path:map(curry(load_ability, type_info))
 
@@ -321,9 +318,20 @@ end
 
 flow.remap = {}
 
-flow.remap["combat.mechanics:damage"] = function(self, state, info)
+flow.remap["combat.mechanics:damage"] = function(self, state, info, args)
     local sprite = get_sprite(self, info.target)
     sprite:shake()
+
+    if info.shielded and sprite.shield then
+        sprite.shield:halt()
+        sprite.shield = nil
+    end
+
+    local sprite = get_sprite(self, args.user)
+    if info.charged and sprite.charge then
+        sprite.charge:halt()
+        sprite.charge = nil
+    end
 end
 
 flow.remap["combat.mechanics:shield"] = function(self, state, info, args)
@@ -346,6 +354,24 @@ flow.remap["combat.mechanics:charge"] = function(self, state, info, args)
     if info.remove and sprite.charge then
         sprite.charge:halt()
         sprite.charge = nil
+    end
+end
+
+flow.remap["combat.ailments:stun_damage"] = function(self, state, info, args)
+    local sprite = get_sprite(self, args.target)
+    local shape = sprite:shape()
+    local x, y = 0, -shape.h - 20
+    if info.activated and not sprite.stun then
+        sprite.stun = sprite:child(require "sfx.ailment.stun")
+        sprite.stun.__transform.pos = vec2(x, y)
+    end
+end
+
+flow.remap["combat.ailments:stun_expired"] = function(self, state, info, args)
+    local sprite = get_sprite(self, args.user)
+    if sprite.stun then
+        sprite.stun:destroy()
+        sprite.stun = nil
     end
 end
 

@@ -155,7 +155,7 @@ actions.slash_II = {
 
 
 actions.solar_slash = {
-    name = "Solar Slash",
+    name = "Brilliant Blade",
     target = {type="single", side="other"},
     transform = function(state, user, target)
         return {
