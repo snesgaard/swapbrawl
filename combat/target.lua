@@ -120,6 +120,11 @@ end
 
 function target.random(state, user, target_data)
     local actors = target.init(state, user, target_data)
+    if target_data.type == "self" then
+        actors.target = user
+        return target.read_all(actors)
+    end
+
 
     local function get_target()
         if target_data.type == "same" then

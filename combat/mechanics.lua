@@ -1,3 +1,5 @@
+local buff = require "combat.buff"
+
 local mech = {}
 
 function mech.identity(id, state, info)
@@ -49,11 +51,26 @@ function mech.damage(state, args)
     args = Dictionary.set(args, "real_damage", args.damage or 0)
 
     -- Final state damage calculation
+    local damage = args.damage
     local charged = state:read("actor/charge/" .. args.user)
     local shielded = state:read("actor/shield/" .. args.target)
-
     local health = state:read("actor/health/" .. args.target) or 0
-    local actual_damage = math.min(health, args.real_damage)
+
+    local weapon_buff = buff.weapon_buff(state, args.user) or {}
+
+    if weapon_buff.damage then
+        local weapon_damage = weapon_buff.damage(state, args.user, args.target)
+        damage = damage + weapon_damage
+    end
+
+    local post_transforms = list()
+
+    if weapon_buff.effect then
+        local effects = list(weapon_buff.effect(state, args.user, args.target))
+        post_transforms = post_transforms + effects
+    end
+
+    local actual_damage = math.min(health, args.damage)
     actual_damage = charged and actual_damage * 2 or actual_damage
     actual_damage = shielded and actual_damage * 0 or actual_damage
     local next_health = health - actual_damage
@@ -62,13 +79,14 @@ function mech.damage(state, args)
         damage = actual_damage, target = args.target,
         charged = charged, shielded = shielded,
         health = next_health,
-        user = args.user
+        user = args.user,
+        weapon_buff = weapon_buff
     }
     state = state:write("actor/health/" .. args.target, next_health)
     state = state:write("actor/shield/" .. args.target, false)
     state = state:write("actor/charge/" .. args.user, false)
 
-    return state, info
+    return state, info, post_transforms
 end
 
 function mech.true_damage(state, args)

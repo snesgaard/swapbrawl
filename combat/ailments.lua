@@ -3,7 +3,7 @@ local ailment_names = {
 }
 
 local ailment_duration = {
-    poison = 3,
+    poison = 4,
     burn = 0,
     petrify = 2,
     frozen = 4,
@@ -47,7 +47,7 @@ end
 
 function ailments.damage(state, args)
     local target = args.target
-    local args_damage = args.damage
+    local args_damage = args.damage or 1
     local ailment_type = args.type
 
     local duration = state:read(duration_path(ailment_type, target))
@@ -73,7 +73,6 @@ function ailments.damage(state, args)
 
     local post_transforms = {}
 
-    print(ailment_type, activated)
     if ailment_type == "burn" and activated then
         post_transforms[#post_transforms +1] = {
             path="combat.mechanics:true_damage", args={target=target, damage=10}
@@ -106,7 +105,7 @@ function ailments.end_of_round(state, args)
     for _, name in ipairs(ailment_names) do
         local duration = state:read(duration_path(name, target)) or 0
         local next_duration = math.max(duration - 1, 0)
-        next_state = state:write(
+        next_state = next_state:write(
             duration_path(name, target), next_duration
         )
         info.duration[name] = next_duration

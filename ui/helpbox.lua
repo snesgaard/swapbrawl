@@ -2,7 +2,7 @@ local textbox = require "ui.textbox"
 local helpbox = {}
 
 function helpbox:create()
-    self.opt = {margin=vec2(10, 10)}
+    self.opt = {margin=vec2(10, 10), title="<Help>"}
 end
 
 function helpbox:set_text(text)
@@ -22,7 +22,7 @@ end
 
 function helpbox:test()
     self:set_size(200)
-    self:set_text("Deal heavy damage and stun. Deal heavy damage and stun. Deal heavy damage and stun. Deal heavy damage and stun.Deal heavy damage and stun.")
+    self:set_text("Deal heavy damage and stun.")
 end
 
 return helpbox

@@ -34,7 +34,7 @@ function keybutton:create()
                 )
                 textbox(
                     text, s.x, s.y, s.w, s.h,
-                    {font=font(20), hide_background=false}
+                    {font=font(20), hide_background=false, valign="center"}
                 )
             end,
             "textbox"

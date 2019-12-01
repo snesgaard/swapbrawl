@@ -75,6 +75,11 @@ local function setup(data, party, foes)
 
     data.ui.command.__transform.pos = vec2(gfx.getWidth() * 0.35, 150)
 
+    data.ui.help = data.ui:child(require "ui.helpbox")
+    data.ui.help.__transform.pos = vec2(gfx.getWidth() - 400, 50)
+    data.ui.help:set_size(350)
+    data.ui.help:set_text("This is an attack!")
+
     remap(data)
     remap(data.ui.turn)
     remap(data.ui.number_server)
@@ -98,9 +103,9 @@ function pickers.action(data, id, opt)
     -- Setup
     while true do
         local key = event:wait("keypressed")
-        key = key:upper()
-        local action = opt.combo[key]
-        if action then return key end
+        local u_key = key:upper()
+        if opt.combo[key] then return key end
+        if opt.combo[u_key] then return u_key end
     end
 end
 
@@ -207,12 +212,16 @@ local function player_turn(data, next_id)
     data.ui.command:show()
 
     while not opt.targets do
+        data.ui.help:set_text()
         data.ui.command:select()
         opt.action = pickers.action(data, next_id, opt)
+        local help = opt.combo[opt.action].help
+        data.ui.help:set_text(help)
         data.ui.command:select(opt.action)
         opt.targets = pickers.target(data, next_id, opt)
     end
 
+    data.ui.help:set_text()
     data.ui.command:select()
     data.ui.command:hide()
     local action = opt.combo[opt.action]
@@ -407,6 +416,8 @@ flow.remap["combat.ailments:poison_damage"] = function(self, state, info, args)
         sprite.poison = sprite:child(require "sfx.ailment.poison")
         sprite.poison.__transform.pos = vec2(x, y)
     end
+
+    sprite:child(require "sfx.ailment.poison_damage", shape.w, shape.h)
 end
 
 flow.remap["combat.ailments:end_of_round"] = function(self, state, info, args)
