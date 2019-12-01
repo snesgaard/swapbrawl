@@ -37,21 +37,27 @@ function fencer.basestats()
     return {
         health = 10,
         --stamina = 100,
-        agility = 10,
+        agility = 20,
     }
 end
 
 fencer.combo = {
     root = {
-        W = "pommel_strike_I",
+        W = "flash_bang",
         D = "slash_I",
         A = "potion",
     },
     slash_I = {
-        W = "pommel_strike_I",
-        D = "slash_II",
+        W = "flash_bang",
+        D = "cross_cut",
         S = "backhop",
         A = "potion",
+    },
+    cross_cut  = {
+        W = "flash_bang",
+        D = "blazing_blade",
+        S = "backhop",
+        A = "potion"
     },
     slash_II = {
         W = "pommel_strike_I",
@@ -59,11 +65,22 @@ fencer.combo = {
         S = "backhop",
         A = "potion"
     },
-    solar_slash = {
+    blazing_blade = {
+        A = "potion",
+        W = "flash_bang",
         S = "backhop"
     },
     pommel_strike_I = {
         W = "pommel_strike_II",
+        S = "backhop",
+        A = "potion"
+    },
+    flash_bang = {
+        W = "flash_burn",
+        S = "backhop",
+        A = "potion"
+    },
+    flash_burn = {
         S = "backhop",
         A = "potion"
     },
@@ -76,7 +93,7 @@ fencer.combo = {
         S = "backhop"
     },
     backhop = {
-        A = "triple_trouble",
+        A = "double_cross",
         D = "flying_kick"
     },
 }
@@ -112,7 +129,7 @@ actions.pommel_strike_I = {
 }
 
 actions.slash_I = {
-    name = "Slash I",
+    name = "Slash",
     target = {type="single", side="other"},
     transform = function(state, user, target)
         return {
@@ -128,6 +145,40 @@ actions.slash_I = {
         --animation.melee_attack(root, epic[1].state, user, opt, target)
         animation.approach(root, epic[1].state, user, target)
         animation.attack(root, epic[1].state, user, target, opt)
+        animation.fallback(root, epic[1].state, user)
+    end
+}
+
+actions.cross_cut = {
+    name = "Cross Cut",
+    target = {type="single", side="other"},
+    transform = function(state, user, target)
+        return {
+            path="combat.mechanics:damage",
+            args={damage=4, user=user, target=target},
+            tag="first"
+        }, {
+            path="combat.mechanics:damage",
+            args={damage=4, user=user, target=target},
+            tag="second"
+        }
+    end,
+    animation = function(root, epic, user, target)
+        local opt1 = {
+            on_impact = function()
+                root:broadcast(epic[epic.first])
+            end,
+            wait = 0.1
+        }
+        local opt2 = {
+            on_impact = function()
+                root:broadcast(epic[epic.second])
+            end
+        }
+        --animation.melee_attack(root, epic[1].state, user, opt, target)
+        animation.approach(root, epic[1].state, user, target)
+        animation.attack(root, epic[1].state, user, target, opt1)
+        animation.attack(root, epic[1].state, user, target, opt2)
         animation.fallback(root, epic[1].state, user)
     end
 }
@@ -154,16 +205,16 @@ actions.slash_II = {
 }
 
 
-actions.solar_slash = {
-    name = "Brilliant Blade",
+actions.blazing_blade = {
+    name = "Blazing Blade",
     target = {type="single", side="other"},
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
             args={damage=10, user=user, target=target}
         }, {
-            path="combat.mechanics:heal",
-            args={heal=5, user=user, target=user}
+            path="combat.ailments:burn_damage",
+            args={damage=1, user=user, target=target}
         }
     end,
     animation = function(root, epic, user, target)
@@ -227,20 +278,137 @@ actions.potion = {
     end
 }
 
-actions.triple_trouble = {
-    name = "Triple Trouble",
+actions.flash_bang = {
+    name = "Flash Bang",
     target = {type="single", side="other"},
 
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
-            args={damage=2, user=user, target=target}
+            args={damage=3, user=user, target=target}
+        }, {
+            path="combat.ailments:stun_damage",
+            args={damage=2, target = target}
+        }
+    end,
+
+    animation = function(root, epic, user, target)
+        local hitbox, user_sprite, target_sprite = animation.throw(
+            root, state, user, {}, target
+        )
+        local start_pos = hitbox:center()
+        local s = target_sprite:shape()
+        local stop_pos = target_sprite.__transform.pos - vec2(0, s.h / 2)
+
+        local anime = {
+            normal="flashbang/normal"
+        }
+
+        local sfx_node = root.sfx:child(require "sfx/ballistic", anime, "art/props")
+
+        local opt = {}
+        function opt.on_impact()
+            local n = root.sfx:child(require "sfx.explosion")
+            n.__transform.pos = stop_pos
+            root:broadcast(unpack(epic))
+        end
+
+        sfx_node:travel(start_pos, stop_pos, opt)
+        event:wait(sfx_node, "finish")
+
+        animation.throw_return(root, user)
+    end
+}
+
+actions.flash_burn = {
+    name = "Flash & Burn",
+    target = {type="single", side="other"},
+
+    transform = function(state, user, target)
+        return {
+            path="combat.mechanics:damage",
+            args={damage=2, user=user, target=target},
+            tag="bang_dmg"
+        }, {
+            path="combat.ailments:stun_damage",
+            args={damage=2, target = target},
+            tag="bang_stun"
         }, {
             path="combat.mechanics:damage",
-            args={damage=2, user=user, target=target}
+            args={damage=2, user=user, target=target},
+            tag="burn_dmg"
+        }, {
+            path="combat.ailments:burn_damage",
+            args={damage=2, target = target},
+            tag="burn_burn"
+        }
+    end,
+
+    animation = function(root, epic, user, target)
+        local hitbox, user_sprite, target_sprite = animation.throw(
+            root, state, user, {}, target
+        )
+        local start_pos = hitbox:center()
+        local s = target_sprite:shape()
+        local stop_pos = target_sprite.__transform.pos - vec2(0, s.h / 2)
+
+        local anime = {
+            normal="flashbang/normal"
+        }
+        local flash_opt = {
+            on_impact = function()
+                local n = root.sfx:child(require "sfx.explosion")
+                n.__transform.pos = stop_pos
+                root:broadcast(epic[epic.bang_dmg], epic[epic.bang_stun])
+            end
+        }
+        local burn_opt = {
+            is_linear = true,
+            on_impact = function()
+                local n = root.sfx:child(require "sfx.flame_gust")
+                n.__transform.pos = stop_pos
+                for i = epic.burn_dmg, #epic do
+                    root:broadcast(epic[i])
+                end
+            end
+        }
+
+        local sfx_node = root.sfx:child(
+            require "sfx/ballistic", anime, "art/props"
+        )
+        sfx_node:travel(start_pos, stop_pos, flash_opt)
+        event:wait(sfx_node, "finish")
+        local hitbox, user_sprite, target_sprite = animation.throw(
+            root, state, user, {}, target
+        )
+        local sfx_node = root.sfx:child(
+            require "sfx/ballistic", anime, "art/props"
+        )
+        sfx_node:travel(start_pos, stop_pos, burn_opt)
+        event:wait(sfx_node, "finish")
+        event:sleep(0.4)
+
+        animation.throw_return(root, user)
+    end
+}
+
+actions.double_cross = {
+    name = "Double Cross",
+    target = {type="single", side="other"},
+
+    transform = function(state, user, target)
+        return {
+            path="combat.mechanics:damage",
+            args={damage=4, user=user, target=target}
         }, {
             path="combat.mechanics:damage",
-            args={damage=2, user=user, target=target}
+            args={damage=4, user=user, target=target}
+        }, {
+            path="combat.mechanics:damage",
+            args={damage=4, user=user, target=target}
+        }, {
+            path="combat.mechanics:damage",
+            args={damage=4, user=user, target=target}
         }
     end,
 
@@ -255,8 +423,9 @@ actions.triple_trouble = {
         --animation.melee_attack(root, epic[1].state, user, opt, target)
         animation.approach(root, epic[1].state, user, target)
         animation.attack(root, epic[1].state, user, target, make_opt(epic[1], 0.1))
-        animation.attack(root, epic[1].state, user, target, make_opt(epic[2], 0.2))
-        animation.attack(root, epic[1].state, user, target, make_opt(epic[3], 0.5))
+        animation.attack(root, epic[1].state, user, target, make_opt(epic[2], 0.1))
+        animation.attack(root, epic[1].state, user, target, make_opt(epic[3], 0.2))
+        animation.attack(root, epic[1].state, user, target, make_opt(epic[4], 0.5))
         animation.fallback(root, epic[1].state, user)
     end
 }

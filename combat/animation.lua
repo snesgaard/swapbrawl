@@ -12,7 +12,7 @@ function anime.approach(root, state, user, target, opt)
     local SPEED = opt.speed or 1500
     local dist = (final_pos - begin_pos):length()
     local time = dist / SPEED
-
+    time = math.max(time, 0.1)
     su:queue{"dash"}
     local t = tween(time, su.__transform.pos, final_pos - offset)
         :ease(ease.sigmoid)

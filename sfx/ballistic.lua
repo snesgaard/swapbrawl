@@ -20,9 +20,7 @@ local function calculate_curve(start_pos, end_pos, gravity)
     return a, b, c
 end
 
-function ballistic:_travel(start_pos, end_pos, opt)
-    opt = opt or {}
-    self.sprite:queue("normal")
+function ballistic:ballistic_travel(start_pos, end_pos, opt)
     local x1, x2 = start_pos.x, end_pos.x
     local a, b, c, dur = calculate_curve(
         start_pos, end_pos, opt.gravity or -2000
@@ -30,6 +28,7 @@ function ballistic:_travel(start_pos, end_pos, opt)
     local angular_speed = opt.angular_speed or 20
     local duration = opt.time or 0.85
     local time = duration
+
     while time > 0 do
         local dt = event:wait("update")
         time = time - dt
@@ -40,15 +39,50 @@ function ballistic:_travel(start_pos, end_pos, opt)
         self.__transform.pos.y = y
         self.__transform.angle = self.__transform.angle + angular_speed * dt
     end
+end
+
+function ballistic:linear_travel(start_pos, end_pos, opt)
+    local x1, x2 = start_pos.x, end_pos.x
+    local y1, y2 = start_pos.y, end_pos.y
+    local angular_speed = opt.angular_speed or 20
+    local duration = opt.time or 0.15
+    local time = duration
+
+    while time > 0 do
+        local dt = event:wait("update")
+        time = time - dt
+        local s = 1 - time / duration
+        local x = x1 * (1 - s) + x2 * s
+        local y = y1 * (1 - s) + y2 * s
+        self.__transform.pos.x = x
+        self.__transform.pos.y = y
+        self.__transform.angle = self.__transform.angle + angular_speed * dt
+    end
+end
+
+function ballistic:_travel(start_pos, end_pos, opt)
+    opt = opt or {}
+    self.sprite:queue("normal")
+    if opt.is_linear then
+        self:linear_travel(start_pos, end_pos, opt)
+    else
+        self:ballistic_travel(start_pos, end_pos, opt)
+    end
 
     self.__transform.angle = 0
-
-    self.sprite:queue({"impact", loop=false})
+    local has_impact = self.sprite:get_animation("impact")
+    if has_impact then
+        self.sprite:queue({"impact", loop=false})
+    else
+        self.sprite:hide()
+    end
     if opt.on_impact then
         opt.on_impact()
     end
     event(self, "finish")
-    event:wait(self.sprite, "finish")
+    if has_impact then
+        event:wait(self.sprite, "finish")
+    end
     self:destroy()
 end
 

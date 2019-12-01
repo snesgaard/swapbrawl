@@ -232,4 +232,6 @@ charbar.remap["combat.mechanics:damage"] = function(self, state, info)
     )
 end
 
+charbar.remap["combat.mechanics:true_damage"] = charbar.remap["combat.mechanics:damage"]
+
 return charbar

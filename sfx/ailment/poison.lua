@@ -14,9 +14,10 @@ function sfx:create()
         lifetime = 2.0,
         buffer = 10,
         speed = 40,
+        area = {"uniform", 10, 2},
         spread = math.pi * 0.2,
         dir = -math.pi * 0.5,
-        size = {0.1, 1, 0.5},
+        size = {0.2, 2, 1.0},
         color = {
             0.8, 0.3, 0.9, 0.5,
             0.8, 0.3, 0.9, 1.0,

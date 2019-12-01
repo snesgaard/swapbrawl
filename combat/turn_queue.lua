@@ -5,6 +5,7 @@ function turn_queue.init_state(state)
         pending = list(),
         order = list(),
         done = list(),
+        number = 0
     }
 end
 
@@ -37,6 +38,7 @@ function turn_queue.new_turn(state, args)
         :write("turn/pending", order)
         :write("turn/order", list())
         :write("turn/done", list())
+        :map("turn/number", function(n) return n + 1 end)
 end
 
 function turn_queue.pending(state, args)

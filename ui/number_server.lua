@@ -134,8 +134,8 @@ function DamageNumberServer:number(number, x, y, type)
     --number = DamageNumber.create(number, self, type)
     self.numbers[number] = true
     self.time[number] = love.timer.getTime()
-    self.x[number] = x + love.math.random(-10, 10)
-    self.y[number] = y + love.math.random(-10, 10)
+    self.x[number] = x + love.math.random(-30, 30)
+    self.y[number] = y + love.math.random(-30, 30)
     self.draworder = self:get_draworder()
     return self
 end
@@ -185,6 +185,8 @@ DamageNumberServer.remap["combat.mechanics:damage"] = function(
     local p = sprite:shape():center()
     self:damage(p, info)
 end
+
+DamageNumberServer.remap["combat.mechanics:true_damage"] = DamageNumberServer.remap["combat.mechanics:damage"]
 
 DamageNumberServer.remap["combat.mechanics:heal"] = function(
         self, state, info, args, root

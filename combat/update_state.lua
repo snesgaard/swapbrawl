@@ -20,24 +20,20 @@ function state._init()
             pre = dict{},
             post = dict{},
         },
-        ailment = dict{
-            poison = dict{}, burn=dict{}, stun=dict{}
-        }
+        --ailment = dict{
+        --    poison = dict{}, burn=dict{}, stun=dict{}
+        --}
     }
 
     require("combat.turn_queue").init_state(root)
     require("combat.deck").init_state(root)
     require("combat.combotree").init_state(root)
     require("combat.ai").init_state(root)
+    require("combat.ailments").init_state(root)
 
     for _, d in pairs(root.react) do
         d.order = list()
         d.func = dict()
-    end
-    for _, d in pairs(root.ailment) do
-        d.resistance = dict()
-        d.damage = dict()
-        d.duration = dict()
     end
 
     return root

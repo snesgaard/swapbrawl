@@ -3,6 +3,7 @@ local turn = require "combat.turn_queue"
 local target = require "combat.target"
 local deck = require "combat.deck"
 local combo = require "combat.combotree"
+local ailments = require "combat.ailments"
 require "combat.update_state"
 
 function remap(node)
@@ -154,8 +155,15 @@ local function default_ability(path)
 end
 
 local function load_ability(type_info, path)
+    if not type_info then
+        return default_ability(path)
+    end
     local actions = type_info.actions or {}
     return actions[path] or default_ability(path)
+end
+
+local function stunned_ability()
+    return default_ability("**Stunned**")
 end
 
 local function ai_turn(data, next_id)
@@ -163,11 +171,16 @@ local function ai_turn(data, next_id)
     local next_ai_state, action, targets = ai.update(data.state, next_id)
     data.state = ai.write_state(data.state, next_id, next_ai_state)
     action = load_ability(data.state:type(next_id), action)
-
     local args = {action=action, target=targets}
     log.info(
         "Action picked %s %s %s", next_id, action.name, tostring(targets)
     )
+    update_state(data, {path="combat.turn_queue:push", args=args})
+end
+
+local function stunned_turn(data, next_id)
+    local args = {action=stunned_ability()}
+    log.info("User <%s> is stunned", next_id)
     update_state(data, {path="combat.turn_queue:push", args=args})
 end
 
@@ -213,7 +226,9 @@ local function turn(data)
     local next_id = require("combat.turn_queue").next_pending(data.state)
     if not next_id then return end
     local place =  data.state:position(next_id)
-    if place > 0 then
+    if ailments.is_stunned(data.state, next_id) then
+        stunned_turn(data, next_id)
+    elseif place > 0 then
         player_turn(data, next_id)
     else
         ai_turn(data, next_id)
@@ -262,6 +277,17 @@ local function execute_queue(data)
     return execute_queue(data)
 end
 
+local function end_of_round(data)
+    local actors = data.state:read("turn/done")
+        :map(function(v) return v.id end)
+
+    for _, id in pairs(actors) do
+        local args = {target=id}
+        update_state(data, {path="combat.ailments:end_of_round", args=args})
+    end
+
+end
+
 local function round(data)
     -- setup new round
     update_state(data, {path="combat.turn_queue:new_turn"})
@@ -269,6 +295,7 @@ local function round(data)
     turn(data)
     --event:sleep(1.0)
     execute_queue(data)
+    end_of_round(data)
 end
 
 local flow = {}
@@ -334,6 +361,11 @@ flow.remap["combat.mechanics:damage"] = function(self, state, info, args)
     end
 end
 
+flow.remap["combat.mechanics:true_damage"] = function(self, state, info, args)
+    local sprite = get_sprite(self, info.target)
+    sprite:shake()
+end
+
 flow.remap["combat.mechanics:shield"] = function(self, state, info, args)
     local sprite = get_sprite(self, info.target)
     if info.shielded and not sprite.shield then
@@ -367,11 +399,23 @@ flow.remap["combat.ailments:stun_damage"] = function(self, state, info, args)
     end
 end
 
-flow.remap["combat.ailments:stun_expired"] = function(self, state, info, args)
-    local sprite = get_sprite(self, args.user)
-    if sprite.stun then
-        sprite.stun:destroy()
-        sprite.stun = nil
+flow.remap["combat.ailments:poison_damage"] = function(self, state, info, args)
+    local sprite = get_sprite(self, args.target)
+    local shape = sprite:shape()
+    local x, y = 0, -shape.h - 20
+    if info.activated and not sprite.poison then
+        sprite.poison = sprite:child(require "sfx.ailment.poison")
+        sprite.poison.__transform.pos = vec2(x, y)
+    end
+end
+
+flow.remap["combat.ailments:end_of_round"] = function(self, state, info, args)
+    local sprite = get_sprite(self, args.target)
+    for key, finished in pairs(info.finished) do
+        if sprite[key] and finished then
+            sprite[key]:destroy()
+            sprite[key] = nil
+        end
     end
 end
 

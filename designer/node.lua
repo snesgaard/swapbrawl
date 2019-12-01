@@ -37,6 +37,10 @@ function love.load(arg)
         reload_scene()
     end
 
+    event:listen("keypressed", function(key)
+        if key == "tab" then reload_scene() end
+    end)
+
     dress = suit.new()
     --gfx.setBackgroundColor(0.5, 0.5, 0.5)
 

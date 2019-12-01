@@ -26,7 +26,6 @@ function combotree.traverse(combo, action)
         local key = parts[#parts]
         -- Check if state is defined, else go back to root state
         local e = combo.graph[key]
-        print(key, e)
         return combo:set("state", e and key or default_state)
     end
 end

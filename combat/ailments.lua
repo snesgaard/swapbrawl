@@ -4,11 +4,11 @@ local ailment_names = {
 
 local ailment_duration = {
     poison = 3,
-    burn = nil,
+    burn = 0,
     petrify = 2,
     frozen = 4,
     bleed = 3,
-    stun = 1,
+    stun = 2,
 }
 
 local function format_path(ailment_type, dst, target)
@@ -33,6 +33,18 @@ end
 
 local ailments = {}
 
+function ailments.init_state(state)
+    state.ailment = dict()
+    for _, name in ipairs(ailment_names) do
+        state.ailment[name] = dict{
+            damage = dict(),
+            duration = dict(),
+            resistance = dict(),
+            increase = dict()
+        }
+    end
+end
+
 function ailments.damage(state, args)
     local target = args.target
     local args_damage = args.damage
@@ -45,6 +57,7 @@ function ailments.damage(state, args)
     duration = duration or 0
     res = res or 1
     damage = damage or 0
+    increase = increase or 3
     local active = duration > 0
     local next_damage = not active and (damage + args_damage) or 0
     local activated = next_damage >= res
@@ -58,11 +71,60 @@ function ailments.damage(state, args)
         active = active
     }
 
+    local post_transforms = {}
+
+    print(ailment_type, activated)
+    if ailment_type == "burn" and activated then
+        post_transforms[#post_transforms +1] = {
+            path="combat.mechanics:true_damage", args={target=target, damage=10}
+        }
+    end
+
     local next_state = state
         :write(damage_path(ailment_type, target), next_damage)
         :write(resistance_path(ailment_type, target), next_res)
 
-    return next_state, info
+    if activated then
+        next_state = next_state
+            :write(
+                duration_path(ailment_type, target),
+                ailment_duration[ailment_type]
+            )
+    end
+
+    return next_state, info, post_transforms
+end
+
+function ailments.end_of_round(state, args)
+    local target = args.target
+    local info = {
+        duration = {},
+        finished = {},
+    }
+
+    local next_state = state
+    for _, name in ipairs(ailment_names) do
+        local duration = state:read(duration_path(name, target)) or 0
+        local next_duration = math.max(duration - 1, 0)
+        next_state = state:write(
+            duration_path(name, target), next_duration
+        )
+        info.duration[name] = next_duration
+        info.finished[name] = next_duration <= 0
+    end
+    local post_transforms = {}
+    if info.duration.poison > 0 then
+        post_transforms[#post_transforms + 1] = {
+            path="combat.mechanics:true_damage", args={target=target, damage=2}
+        }
+    end
+
+    return next_state, info, post_transforms
+end
+
+function ailments.is_stunned(state, id)
+    local duration = state:read(duration_path("stun", id)) or 0
+    return duration > 0
 end
 
 local function declare_damage(ailment_type)
