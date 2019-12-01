@@ -12,6 +12,10 @@ function state._init()
             offset = dict{},
             type = dict{},
         },
+        buff = dict{
+            body = dict{},
+            weapon = dict{}
+        },
         position = dict{
             -- Convention : abs(1-3) is frontline. abs(3-) is reserve
             -- Negative numbers are foes, positve are players

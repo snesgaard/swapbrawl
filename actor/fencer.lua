@@ -43,59 +43,42 @@ end
 
 fencer.combo = {
     root = {
-        W = "flash_bang",
+        W = "blunt_strike_I",
         D = "slash_I",
         A = "potion",
+        up = "toxic_oil",
+        left = "power_oil",
+        right = "blast_oil"
     },
-    slash_I = {
-        W = "flash_bang",
-        D = "cross_cut",
-        S = "backhop",
+    blunt_strike_I = {
+        W = "blunt_strike_II",
         A = "potion",
-    },
-    cross_cut  = {
-        W = "flash_bang",
-        D = "blazing_blade",
-        S = "backhop",
-        A = "potion"
-    },
-    slash_II = {
-        W = "pommel_strike_I",
-        D = "solar_slash",
-        S = "backhop",
-        A = "potion"
-    },
-    blazing_blade = {
-        A = "potion",
-        W = "flash_bang",
         S = "backhop"
     },
-    pommel_strike_I = {
-        W = "pommel_strike_II",
+    slash_I = {
+        W = "blunt_strike_I",
+        D = "cross_cut",
+        A = "potion",
+        S = "backhop"
+    },
+    cross_cut = {
+        W = "blunt_strike_I",
+        D = "brilliant_blade",
         S = "backhop",
         A = "potion"
     },
-    flash_bang = {
-        W = "flash_burn",
-        S = "backhop",
-        A = "potion"
+    brilliant_blade = {
+        W = "blunt_strike_I",
+        S = "backhop"
     },
-    flash_burn = {
-        S = "backhop",
-        A = "potion"
-    },
-    pommel_strike_II = {
-        W = "kick",
-        S = "backhop",
-        A = "potion"
-    },
-    kick = {
+    blunt_strike_II = {
+        A = "potion",
         S = "backhop"
     },
     backhop = {
-        A = "double_cross",
-        D = "flying_kick"
-    },
+        A = "triple_trouble",
+        D = "lunge"
+    }
 }
 
 fencer.actions = dict()
@@ -104,16 +87,51 @@ local actions = fencer.actions
 
 local animation = require "combat.animation"
 
-actions.pommel_strike_I = {
-    name = "Pommel Strike I",
+actions.lunge = {
+    name = "Lunge",
     target = {type="single", side="other"},
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
-            args={damage=2, user=user, target=target},
+            args={damage=15, user=user, target=target}
+        }
+    end
+}
+
+actions.blunt_strike_I = {
+    name = "Blunt Strike I",
+    target = {type="single", side="other"},
+    transform = function(state, user, target)
+        return {
+            path="combat.mechanics:damage",
+            args={damage=4, user=user, target=target},
         }, {
             path="combat.ailments:stun_damage",
-            args={damage=2, user=user, target=target},
+            args={damage=1, user=user, target=target},
+        }
+    end,
+    animation = function(root, epic, user, target)
+        local opt = {}
+        function opt.on_impact()
+            root:broadcast(unpack(epic))
+        end
+        --animation.melee_attack(root, epic[1].state, user, opt, target)
+        animation.approach(root, epic[1].state, user, target)
+        animation.attack(root, epic[1].state, user, target, opt)
+        animation.fallback(root, epic[1].state, user)
+    end
+}
+
+actions.blunt_strike_II = {
+    name = "Heavy Blunt Strike",
+    target = {type="single", side="other"},
+    transform = function(state, user, target)
+        return {
+            path="combat.mechanics:damage",
+            args={damage=8, user=user, target=target},
+        }, {
+            path="combat.ailments:stun_damage",
+            args={damage=1, user=user, target=target},
         }
     end,
     animation = function(root, epic, user, target)
@@ -205,16 +223,16 @@ actions.slash_II = {
 }
 
 
-actions.blazing_blade = {
-    name = "Blazing Blade",
+actions.brilliant_blade = {
+    name = "Brilliant Blade",
     target = {type="single", side="other"},
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
             args={damage=10, user=user, target=target}
         }, {
-            path="combat.ailments:burn_damage",
-            args={damage=1, user=user, target=target}
+            path="combat.mechanics:heal",
+            args={heal=5, user=user, target=user}
         }
     end,
     animation = function(root, epic, user, target)
@@ -392,15 +410,12 @@ actions.flash_burn = {
     end
 }
 
-actions.double_cross = {
-    name = "Double Cross",
+actions.triple_trouble = {
+    name = "Triple Trouble",
     target = {type="single", side="other"},
 
     transform = function(state, user, target)
         return {
-            path="combat.mechanics:damage",
-            args={damage=4, user=user, target=target}
-        }, {
             path="combat.mechanics:damage",
             args={damage=4, user=user, target=target}
         }, {
@@ -423,11 +438,19 @@ actions.double_cross = {
         --animation.melee_attack(root, epic[1].state, user, opt, target)
         animation.approach(root, epic[1].state, user, target)
         animation.attack(root, epic[1].state, user, target, make_opt(epic[1], 0.1))
-        animation.attack(root, epic[1].state, user, target, make_opt(epic[2], 0.1))
-        animation.attack(root, epic[1].state, user, target, make_opt(epic[3], 0.2))
-        animation.attack(root, epic[1].state, user, target, make_opt(epic[4], 0.5))
+        animation.attack(root, epic[1].state, user, target, make_opt(epic[2], 0.2))
+        animation.attack(root, epic[1].state, user, target, make_opt(epic[3], 0.5))
         animation.fallback(root, epic[1].state, user)
     end
+}
+
+weapon_buffs = {
+    toxic_oil = {
+        damage = function()
+        end
+        effect = function()
+        end
+    }
 }
 
 

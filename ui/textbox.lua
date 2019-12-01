@@ -31,13 +31,18 @@ function textbox:__call(text, x, y, w, h, opt)
     w = w or font:getWidth(text) + 4
     h = h or font:getHeight() + 4
 
+    local margin = opt.margin or vec2()
+
     if not opt.hide_background then
         local color = opt.backgound_color or textbox.theme.background.color
         gfx.setColor(unpack(color))
-        gfx.rectangle("fill", x, y, w, h, opt.backround_radius or 10)
+        gfx.rectangle(
+            "fill", x, y,
+            w + margin.x * 2, h + margin.y * 2, opt.backround_radius or 10
+        )
     end
 
-    textbox.draw_text(text, x, y, w, h, font, opt)
+    textbox.draw_text(text, x + margin.x, y + margin.y, w, h, font, opt)
 end
 
 return setmetatable(textbox, textbox)
