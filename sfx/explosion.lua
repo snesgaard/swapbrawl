@@ -2,7 +2,7 @@ local sfx = {}
 
 function sfx:create()
     self.flash_circle = {
-        image = gfx.prerender(400, 400, function(w, h)
+        image = gfx.prerender(200, 200, function(w, h)
             gfx.setColor(1, 1, 1)
             gfx.ellipse("fill", w * 0.5, h * 0.5, w * 0.5, h * 0.5)
         end),

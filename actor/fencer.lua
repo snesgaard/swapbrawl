@@ -504,7 +504,44 @@ actions.toxic_oil = {
 
         animation.throw_return(root, user)
     end
+}
 
+actions.blast_oil = {
+    name = "Blast Oil",
+    target = {type="self", side="same"},
+    help = "Weapon attacks will deal burn damage.",
+    transform = function(state, user, target)
+        return {
+            path="combat.buff:apply",
+            args={target=target, buff=fencer.buffs.blast_oil}
+        }
+    end,
+
+    animation = function(root, epic, user, target)
+        local hitbox, user_sprite, target_sprite = animation.throw(
+            root, state, user, {}, target
+        )
+        local start_pos = hitbox:center()
+        local s = target_sprite:shape()
+        local stop_pos = target_sprite.__transform.pos - vec2(0, s.h / 2)
+
+        local anime = {
+            normal="potion_red/idle",
+            impact="potion_red/break"
+        }
+
+        local sfx_node = root.sfx:child(require "sfx/ballistic", anime, "art/props")
+
+        local opt = {}
+        function opt.on_impact()
+            root:broadcast(unpack(epic))
+        end
+
+        sfx_node:travel(start_pos, stop_pos, opt)
+        event:wait(sfx_node, "finish")
+
+        animation.throw_return(root, user)
+    end
 }
 
 
@@ -514,7 +551,6 @@ local buffs = fencer.buffs
 buffs.toxic_oil = {
     type = "weapon",
     effect = function(state, user, target)
-        print("yeeee")
         return {path="combat.ailments:poison_damage", args={target=target}}
     end
 }

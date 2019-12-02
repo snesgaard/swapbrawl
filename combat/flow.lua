@@ -420,6 +420,21 @@ flow.remap["combat.ailments:poison_damage"] = function(self, state, info, args)
     sprite:child(require "sfx.ailment.poison_damage", shape.w, shape.h)
 end
 
+flow.remap["combat.ailments:burn_damage"] = function(self, state, info, args)
+    local sprite = get_sprite(self, args.target)
+    local shape = sprite:shape()
+    local x, y = 0, -shape.h * 0.5
+
+    local n = sprite:child(require "sfx.ailment.burn_damage", shape.w, shape.h)
+    n.__transform.pos.y = y
+
+    if info.activated then
+        local n = sprite:child(require "sfx.explosion")
+        n.__transform.pos.y = y
+    end
+
+end
+
 flow.remap["combat.ailments:end_of_round"] = function(self, state, info, args)
     local sprite = get_sprite(self, args.target)
     for key, finished in pairs(info.finished) do
