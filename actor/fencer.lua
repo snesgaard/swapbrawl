@@ -43,42 +43,49 @@ end
 
 fencer.combo = {
     root = {
-        W = "blunt_strike_I",
         D = "slash_I",
         A = "potion",
-        up = "toxic_oil",
-        left = "power_oil",
-        right = "blast_oil"
-    },
-    blunt_strike_I = {
-        W = "blunt_strike_II",
-        A = "potion",
-        S = "backhop"
+        up = "brute_oil",
+        down = "blunt_oil",
+        left = "bile_oil",
+        right = "brilliant_oil",
     },
     slash_I = {
-        W = "blunt_strike_I",
         D = "cross_cut",
+        W = "flank",
+        S = "backhop",
         A = "potion",
-        S = "backhop"
+        up = "brute_oil",
+        down = "blunt_oil",
+        left = "bile_oil",
+        right = "brilliant_oil",
     },
     cross_cut = {
-        W = "blunt_strike_I",
+        W = "flank",
         D = "brilliant_blade",
         S = "backhop",
-        A = "potion"
+        A = "potion",
+        up = "brute_oil",
+        down = "blunt_oil",
+        left = "bile_oil",
+        right = "brilliant_oil",
     },
     brilliant_blade = {
-        W = "blunt_strike_I",
-        S = "backhop"
-    },
-    blunt_strike_II = {
-        A = "potion",
-        S = "backhop"
+        W = "flank",
+        S = "backhop",
+        up = "brute_oil",
+        down = "blunt_oil",
+        left = "bile_oil",
+        right = "brilliant_oil",
     },
     backhop = {
         A = "triple_trouble",
         D = "lunge"
-    }
+    },
+    flank = {
+        A = "triple_trouble",
+        D = "lunge"
+    },
 }
 
 fencer.actions = dict()
@@ -88,14 +95,31 @@ local actions = fencer.actions
 local animation = require "combat.animation"
 
 actions.lunge = {
-    name = "Lunge",
+    name = "Forward Lunge",
     target = {type="single", side="other"},
-    help = "Deal heavy damage.",
+    help = string.stack(
+        "Legion Fencing: Fourth Form.",
+        "",
+        "Heavy damage and stuns the enemy."
+    ),
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
-            args={damage=15, user=user, target=target}
+            args={damage=12, user=user, target=target}
+        }, {
+            path="combat.ailments:stun_damage",
+            args={damage=2, user=user, target=target},
         }
+    end,
+    animation = function(root, epic, user, target)
+        local opt = {}
+        function opt.on_impact()
+            root:broadcast(unpack(epic))
+        end
+        --animation.melee_attack(root, epic[1].state, user, opt, target)
+        animation.approach(root, epic[1].state, user, target)
+        animation.attack(root, epic[1].state, user, target, opt)
+        animation.fallback(root, epic[1].state, user)
     end
 }
 
@@ -152,7 +176,11 @@ actions.blunt_strike_II = {
 actions.slash_I = {
     name = "Slash",
     target = {type="single", side="other"},
-    help = "Deal light damage.",
+    help = string.stack(
+        "Legion Fencing: First Form.",
+        "",
+        "Deals light damage."
+    ),
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
@@ -174,7 +202,11 @@ actions.slash_I = {
 actions.cross_cut = {
     name = "Cross Cut",
     target = {type="single", side="other"},
-    help = "Attack twice, dealing light damage.",
+    help = string.stack(
+        "Legion Fencing: Second Form.",
+        "",
+        "Deals light damage twice."
+    ),
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
@@ -235,7 +267,11 @@ actions.slash_II = {
 actions.brilliant_blade = {
     name = "Brilliant Blade",
     target = {type="single", side="other"},
-    help = "Deal medium damage and heal yourself.",
+    help = string.stack(
+        "Legion Fencing: Unsanctioned Sixth Form.",
+        "",
+        "Deals medium damage and heals self."
+    ),
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
@@ -260,7 +296,7 @@ actions.brilliant_blade = {
 actions.backhop = {
     name = "Backhop",
     target = {type="self", side="same"},
-    help = "Gain SHIELD.",
+    help = "Evasive backward motion.\n\nGain SHIELD.",
     transform = function(state, user, target)
         return {
             path="combat.mechanics:shield",
@@ -269,10 +305,26 @@ actions.backhop = {
     end
 }
 
+actions.flank = {
+    name = "Flank",
+    target = {type="self", side="same"},
+    help = "Reposition for a powerful attack.\n\nGain CHARGE.",
+    transform = function(state, user, target)
+        return {
+            path="combat.mechanics:charge",
+            args={target=target}
+        }
+    end
+}
+
 actions.potion = {
     name = "Potion",
     target = {type="single", side="same"},
-    help = "Light healing.",
+    help = string.stack(
+        "A standard legion issued healing potion.\nSimple, yet effective.",
+        "",
+        "Light healing to an ally."
+    ),
     transform = function(state, user, target)
         return {
             path="combat.mechanics:heal",
@@ -422,21 +474,25 @@ actions.flash_burn = {
 }
 
 actions.triple_trouble = {
-    name = "Triple Trouble",
+    name = "Triple Flurry",
     target = {type="single", side="other"},
-    help = "Attack thrice, dealing light damage.",
+    help = string.stack(
+        "Legion Fencing: Third Form.",
+        "",
+        "Triple strike dealing light damage."
+    ),
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
-            args={damage=4, user=user, target=target},
+            args={damage=5, user=user, target=target},
             tag="first"
         }, {
             path="combat.mechanics:damage",
-            args={damage=4, user=user, target=target},
+            args={damage=5, user=user, target=target},
             tag="second"
         }, {
             path="combat.mechanics:damage",
-            args={damage=4, user=user, target=target},
+            args={damage=5, user=user, target=target},
             tag="third"
         }
     end,
@@ -544,6 +600,43 @@ actions.blast_oil = {
     end
 }
 
+actions.power_oil = {
+    name = "Power Oil",
+    target = {type="self", side="same"},
+    help = "Weapon attacks will deal more damage.",
+    transform = function(state, user, target)
+        return {
+            path="combat.buff:apply",
+            args={target=target, buff=fencer.buffs.power_oil}
+        }
+    end,
+
+    animation = function(root, epic, user, target)
+        local hitbox, user_sprite, target_sprite = animation.throw(
+            root, state, user, {}, target
+        )
+        local start_pos = hitbox:center()
+        local s = target_sprite:shape()
+        local stop_pos = target_sprite.__transform.pos - vec2(0, s.h / 2)
+
+        local anime = {
+            normal="potion_red/idle",
+            impact="potion_red/break"
+        }
+
+        local sfx_node = root.sfx:child(require "sfx/ballistic", anime, "art/props")
+
+        local opt = {}
+        function opt.on_impact()
+            root:broadcast(unpack(epic))
+        end
+
+        sfx_node:travel(start_pos, stop_pos, opt)
+        event:wait(sfx_node, "finish")
+
+        animation.throw_return(root, user)
+    end
+}
 
 fencer.buffs = {}
 local buffs = fencer.buffs
@@ -558,7 +651,7 @@ buffs.toxic_oil = {
 buffs.power_oil = {
     type = "weapon",
     damage = function(state, user, target)
-        return 5
+        return 3
     end
 }
 
@@ -568,6 +661,104 @@ buffs.blast_oil = {
         return {path="combat.ailments:burn_damage", args={target=target}}
     end
 }
+
+buffs.brute_oil = {
+    type = "weapon",
+    effect = function(state, user, target)
+        return {
+            path="combat.mechanics:true_damage",
+            args={
+                damage=3,
+                user=user,
+                target=target
+            }
+        }
+    end
+}
+
+buffs.brilliant_oil = {
+    type = "weapon",
+    effect = function(state, user, target)
+        return {
+            path="combat.mechanics:heal",
+            args={
+                heal=3,
+                user=user,
+                target=user
+            }
+        }
+    end
+}
+
+buffs.bile_oil = {
+    type = "weapon",
+    effect = function(state, user, target)
+        return {path="combat.ailments:poison_damage", args={target=target}}
+    end
+}
+
+buffs.blunt_oil = {
+    type = "weapon",
+    effect = function(state, user, target)
+        return {path="combat.ailments:stun_damage", args={target=target}}
+    end
+}
+
+local function declare_oil(args)
+    if not args.oil then
+        error("A buff must be supplied!")
+    end
+    return {
+        name = args.name or "undefined",
+        target = {type="single", side="other"},
+        help = args.help or "Only god can help you now",
+        transform = function(state, user, target)
+            return {
+                path="combat.buff:apply",
+                args={target=user, buff=args.oil}
+            }, {
+                path="combat.mechanics:damage",
+                args={damage=4, user=user, target=target},
+            }
+        end,
+        animation = function(root, epic, user, target)
+            local opt = {}
+            function opt.on_impact()
+                root:broadcast(unpack(epic))
+            end
+            --animation.melee_attack(root, epic[1].state, user, opt, target)
+            animation.approach(root, epic[1].state, user, target)
+            animation.attack(root, epic[1].state, user, target, opt)
+            animation.fallback(root, epic[1].state, user)
+        end
+    }
+end
+
+actions.brute_oil = declare_oil{
+    name="Power Oil",
+    help="A primal oil that lends extra weight to every blow.\n\nApply oil weapon and attack.",
+    oil=fencer.buffs.brute_oil
+}
+
+actions.bile_oil = declare_oil{
+    name="Toxic Oil",
+    help="A vile oil that poisons with every cut.\n\nApply oil to weapon and attack.",
+    oil=fencer.buffs.bile_oil
+}
+
+actions.brilliant_oil = declare_oil{
+    name="Brilliant Oil",
+    help="A blessed oil that restores vitality with every attack.\n\nApply oil to weapon and attack.",
+    oil=fencer.buffs.brilliant_oil
+}
+
+actions.blunt_oil = declare_oil{
+    name="Impact Oil",
+    help="A crude oil that stuns with every strike.\n\nApply oil to weapon and attack.",
+    oil=fencer.buffs.blunt_oil
+}
+
+
 
 
 

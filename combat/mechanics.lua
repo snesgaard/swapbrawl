@@ -70,7 +70,7 @@ function mech.damage(state, args)
         post_transforms = post_transforms + effects
     end
 
-    local actual_damage = math.min(health, args.damage)
+    local actual_damage = math.min(health, damage)
     actual_damage = charged and actual_damage * 2 or actual_damage
     actual_damage = shielded and actual_damage * 0 or actual_damage
     local next_health = health - actual_damage

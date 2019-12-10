@@ -9,11 +9,14 @@ function anime.approach(root, state, user, target, opt)
 
     local offset = su:attack_offset() * vec2(1, 0)
     local final_pos = position.get_world(state:position(), target)
+    local scale = final_pos.x < begin_pos.x and -1 or 1
     local SPEED = opt.speed or 1500
     local dist = (final_pos - begin_pos):length()
     local time = dist / SPEED
     time = math.max(time, 0.1)
     su:queue{"dash"}
+    su.__transform.scale.x = scale
+    offset.x = offset.x * scale
     local t = tween(time, su.__transform.pos, final_pos - offset)
         :ease(ease.sigmoid)
     event:wait(t, "finish")
@@ -49,6 +52,8 @@ function anime.fallback(root, state, user, opt)
         :ease(ease.sigmoid)
     event:wait(t, "finish")
     su:queue("idle")
+    local place = state:position(user)
+    su.__transform.scale.x = place > 0 and 1 or -1
 end
 
 
