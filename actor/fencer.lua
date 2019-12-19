@@ -41,51 +41,15 @@ function fencer.basestats()
     }
 end
 
+
 fencer.combo = {
-    root = {
-        D = "slash_I",
-        A = "potion",
-        up = "brute_oil",
-        down = "blunt_oil",
-        left = "bile_oil",
-        right = "brilliant_oil",
-    },
-    slash_I = {
-        D = "cross_cut",
-        W = "flank",
-        S = "backhop",
-        A = "potion",
-        up = "brute_oil",
-        down = "blunt_oil",
-        left = "bile_oil",
-        right = "brilliant_oil",
-    },
-    cross_cut = {
-        W = "flank",
-        D = "brilliant_blade",
-        S = "backhop",
-        A = "potion",
-        up = "brute_oil",
-        down = "blunt_oil",
-        left = "bile_oil",
-        right = "brilliant_oil",
-    },
-    brilliant_blade = {
-        W = "flank",
-        S = "backhop",
-        up = "brute_oil",
-        down = "blunt_oil",
-        left = "bile_oil",
-        right = "brilliant_oil",
-    },
-    backhop = {
-        A = "triple_trouble",
-        D = "lunge"
-    },
-    flank = {
-        A = "triple_trouble",
-        D = "lunge"
-    },
+    D = {"cross_cut", "triple_trouble"},
+    W = {"brute_oil"},
+    S = {"bile_oil"},
+    A = {"backhop", "lunge"},
+
+    left = {"potion"},
+    right = {"flash_bang"}
 }
 
 fencer.actions = dict()
@@ -95,17 +59,17 @@ local actions = fencer.actions
 local animation = require "combat.animation"
 
 actions.lunge = {
-    name = "Forward Lunge",
+    name = "Lunge",
     target = {type="single", side="other"},
     help = string.stack(
         "Legion Fencing: Fourth Form.",
         "",
-        "Heavy damage and stuns the enemy."
+        "Medium damage and stuns the enemy."
     ),
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
-            args={damage=12, user=user, target=target}
+            args={damage=6, user=user, target=target}
         }, {
             path="combat.ailments:stun_damage",
             args={damage=2, user=user, target=target},
@@ -362,6 +326,7 @@ actions.potion = {
 actions.flash_bang = {
     name = "Flash Bang",
     target = {type="single", side="other"},
+    help ="Simple explosive device.\n\nStuns and damages with an enormous flash.",
 
     transform = function(state, user, target)
         return {

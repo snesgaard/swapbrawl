@@ -248,7 +248,7 @@ end
 
 local function execute(data, action, user, targets, key)
     if key then
-        data.state = data.state:map(join("combo", user), combo.traverse, key)
+        data.state = data.state:map(join("combo", user), combo.update, key)
     end
     if not action.transform then return end
 

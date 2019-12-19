@@ -8,37 +8,36 @@ end
 
 function combotree.init(combo, combo_graph)
     return dict{
-        state = combo_graph.__init__ or "root",
+        state = dict{},
         graph = combo_graph
     }
 end
 
-function combotree.traverse(combo, action)
-    local edges = combo.graph[combo.state]
-    local default_state = combo.graph.__init__ or "root"
-
-    if not edges then
-        return combo:set("state", default_state)
-    else
-        local next_state = edges[action] or combo.graph.__init__
-        -- TODO: Find a better way of etting the key from the path
-        local parts = string.split(next_state, '.')
-        local key = parts[#parts]
-        -- Check if state is defined, else go back to root state
-        local e = combo.graph[key]
-        return combo:set("state", e and key or default_state)
+function combotree.update(combo, action_key)
+    local prev_state = combo.state[action_key] or 1
+    local sequence = combo.graph[action_key]
+    if not sequence then
+        error(string.format("key %s undefined in combo", action_key))
     end
+    local next_state = math.min(#sequence, prev_state + 1)
+
+    -- If we wish to reset the combo
+    return combo:set("state", dict{[action_key] = next_state})
 end
 
 function combotree.get_actions(state, id)
     local combo = state:read(join("combo", id))
-    local root = combo.graph.__init__ or "root"
-    local next = combo.graph[combo.state] or combo.graph[root]
-    return next or combotree.default_combo
+    local graph = combo.graph
+    local abilities = dict()
+    for key, sequence in pairs(graph) do
+        local state = combo.state[key] or 1
+        abilities[key] = sequence[state]
+    end
+    return abilities
 end
 
 function combotree.reset(combo)
-    return combo:set("state", combo[combo.graph.__init__ or "root"])
+    return combo:set("state", dict())
 end
 
 return combotree
