@@ -23,4 +23,21 @@ function actor.basestats()
     }
 end
 
+actor.combo = {
+    A={"chant_mass_shield", "mass_shield"}
+}
+
+actor.actions = {}
+
+local actions = actor.actions
+
+actions.chant_mass_shield = {
+    name = "Chant: Mass Shield",
+    target = {type="self"},
+    animation = function(root, epic, user)
+        local sprite = get_sprite(root, user)
+        sprite:queue{"chant"}
+    end
+}
+
 return actor

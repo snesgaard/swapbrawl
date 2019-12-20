@@ -250,12 +250,13 @@ local function execute(data, action, user, targets, key)
     if key then
         data.state = data.state:map(join("combo", user), combo.update, key)
     end
-    if not action.transform then return end
+
+    --  if not action.transform then return end
 
     log.info("Executing %s for %s -> %s", action.name, user, key)
-    local t = action.transform
+    local t = action.transform or function() end
     local next_state, epic = data.state:transform(
-        t(data.state, user, unpack(targets))
+        t(data.state, user, unpack(targets or {}))
     )
     if next_state and epic then
         data.state = next_state
@@ -310,7 +311,7 @@ end
 local flow = {}
 
 function flow:create(party, foes)
-    party = party or list("fencer")
+    party = party or list("fencer", "mage")
     foes = foes or list("golem")
     setup(self, party, foes)
 end
