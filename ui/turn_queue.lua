@@ -208,6 +208,10 @@ test.remap["combat.turn_queue:push"] = function(self, state, info)
 end
 
 test.remap["combat.turn_queue:pop"] = function(self, state, info)
+    --self:pop()
+end
+
+test.remap["turn:pop_now"] = function(self)
     self:pop()
 end
 

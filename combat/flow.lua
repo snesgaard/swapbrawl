@@ -250,7 +250,6 @@ local function execute(data, action, user, targets, key)
     if key then
         data.state = data.state:map(join("combo", user), combo.update, key)
     end
-
     --  if not action.transform then return end
 
     log.info("Executing %s for %s -> %s", action.name, user, key)
@@ -277,11 +276,12 @@ local function execute_queue(data)
     -- TODO retargeting
     -- TODO Transform action
     log.info("Executing action %s", next_action.id)
+    --data.ui.turn:pop()
+    event("turn:pop_now")
     execute(
         data, next_action.action, next_action.id, next_action.target,
         next_action.key
     )
-
     update_state(data, {path="combat.turn_queue:pop"})
 
     return execute_queue(data)
@@ -325,6 +325,7 @@ end
 function flow:execute(action, user, targets)
     if not targets then
         targets = target.random(self.state, user, action.target)
+        print(targets)
     end
     return self:fork(execute, action, user, targets)
 end
