@@ -77,6 +77,10 @@ function ailments.damage(state, args)
         post_transforms[#post_transforms +1] = {
             path="combat.mechanics:true_damage", args={target=target, damage=10}
         }
+    elseif ailment_type == "stun" and activated then
+        post_transforms[#post_transforms + 1] = {
+            path="combat.combotree:reset_combo", args={target=target}
+        }
     end
 
     local next_state = state
@@ -137,6 +141,5 @@ end
 for _, name in ipairs(ailment_names) do
     ailments[name .. "_damage"] = declare_damage(name)
 end
-
 
 return ailments

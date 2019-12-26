@@ -69,7 +69,7 @@ actions.lunge = {
     transform = function(state, user, target)
         return {
             path="combat.mechanics:damage",
-            args={damage=6, user=user, target=target}
+            args={damage=10, user=user, target=target}
         }, {
             path="combat.ailments:stun_damage",
             args={damage=2, user=user, target=target},
@@ -610,14 +610,14 @@ buffs.toxic_oil = {
     type = "weapon",
     effect = function(state, user, target)
         return {path="combat.ailments:poison_damage", args={target=target}}
-    end
+    end,
 }
 
 buffs.power_oil = {
     type = "weapon",
     damage = function(state, user, target)
         return 3
-    end
+    end,
 }
 
 buffs.blast_oil = {
@@ -638,7 +638,23 @@ buffs.brute_oil = {
                 target=target
             }
         }
-    end
+    end,
+    ["combat.mechanics:damage"] = function(id, state, info, args)
+        if id == args.user then
+            return {
+                path="combat.mechanics:true_damage",
+                args={
+                    damage=3,
+                    user=args.user,
+                    target=args.target
+                }
+            }
+        end
+    end,
+    icon = function(x, y, w, h)
+        gfx.setColor(1, 0, 0)
+        gfx.rectangle("fill", x, y, w, h, 5)
+    end,
 }
 
 buffs.brilliant_oil = {
@@ -659,6 +675,15 @@ buffs.bile_oil = {
     type = "weapon",
     effect = function(state, user, target)
         return {path="combat.ailments:poison_damage", args={target=target}}
+    end,
+    icon = function(x, y, w, h)
+        gfx.setColor(1.0, 0.1, 0.7)
+        gfx.rectangle("fill", x, y, w, h, 5)
+    end,
+    ["combat.mechanics:damage"] = function(id, state, info, args)
+        print("yo")
+        if id ~= args.user then return end
+        return {path="combat.ailments:poison_damage", args={target=args.target}}
     end
 }
 

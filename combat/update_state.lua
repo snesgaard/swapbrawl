@@ -34,6 +34,7 @@ function state._init()
     require("combat.combotree").init_state(root)
     require("combat.ai").init_state(root)
     require("combat.ailments").init_state(root)
+    require("combat.buff").init_state(root)
 
     for _, d in pairs(root.react) do
         d.order = list()
@@ -41,6 +42,11 @@ function state._init()
     end
 
     return root
+end
+
+function state:post_transform(path, state, info, args)
+    local buff = require "combat.buff"
+    return buff.react(path, state, info, args)
 end
 
 function state:type(id)

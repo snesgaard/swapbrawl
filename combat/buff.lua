@@ -35,4 +35,18 @@ function buff.weapon_buff(state, id)
     return state:read(join("buff/weapon", id))
 end
 
+function buff.react(path, state, info, args)
+    local buffs = state:read("buff")
+    local transforms = list()
+    for _, type in ipairs{"weapon", "body", "aura"} do
+        for id, data in pairs(buffs[type]) do
+            local f = data[path]
+            if f then
+                transforms = transforms + list(f(id, state, info, args))
+            end
+        end
+    end
+    return transforms
+end
+
 return buff

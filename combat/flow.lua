@@ -253,6 +253,11 @@ local function execute(data, action, user, targets, key)
     --  if not action.transform then return end
 
     log.info("Executing %s for %s -> %s", action.name, user, key)
+    if ailments.is_stunned(data.state, user) then
+        log.info("Target %s is stunned, skipping...", user)
+        return
+    end
+
     local t = action.transform or function() end
     local next_state, epic = data.state:transform(
         t(data.state, user, unpack(targets or {}))
@@ -356,6 +361,15 @@ end
 
 flow.remap = {}
 
+flow.remap["combat.buff:apply"] = function(self, state, info, args)
+    local ui = self.ui[args.target]
+    if info.buff.icon then
+        if info.buff.type == "weapon" then
+            ui:set_weapon(info.buff.icon)
+        end
+    end
+end
+
 flow.remap["combat.mechanics:damage"] = function(self, state, info, args)
     local sprite = get_sprite(self, info.target)
     sprite:shake()
@@ -445,6 +459,10 @@ flow.remap["combat.ailments:end_of_round"] = function(self, state, info, args)
             sprite[key] = nil
         end
     end
+end
+
+flow.remap["combat.combotree:reset_combo"] = function(self, state, info, args)
+    interrupt_chant(self, args.target)
 end
 
 return flow

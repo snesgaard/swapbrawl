@@ -119,6 +119,10 @@ function charbar:build_layout()
         :compile()
         :expand(25, 15)
 
+    layout.weapon = layout.bound:up(10, 5, 20, 20)
+    layout.body = layout.weapon:right(10, 0)
+    layout.aura = layout.body:right(10, 0)
+
     return layout
 end
 
@@ -200,7 +204,17 @@ function charbar:__draw(x, y)
         "Stamina", label_opt, self.layout.stamina_label:unpack()
     )
     uibar(self.stamina.bar, self.layout.stamina_bar:unpack())
+
+    if self.weapon then
+        self.weapon(self.layout.weapon:unpack())
+    end
 end
+
+function charbar:set_weapon(drawer)
+    self.weapon = drawer
+    return self
+end
+
 
 function charbar:position(index)
     local oy = -200

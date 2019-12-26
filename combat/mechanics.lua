@@ -60,14 +60,14 @@ function mech.damage(state, args)
 
     if weapon_buff.damage then
         local weapon_damage = weapon_buff.damage(state, args.user, args.target)
-        damage = damage + weapon_damage
+        --damage = damage + weapon_damage
     end
 
     local post_transforms = list()
 
     if weapon_buff.effect then
         local effects = list(weapon_buff.effect(state, args.user, args.target))
-        post_transforms = post_transforms + effects
+        --post_transforms = post_transforms + effects
     end
 
     local actual_damage = math.min(health, damage)

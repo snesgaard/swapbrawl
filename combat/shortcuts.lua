@@ -1,4 +1,4 @@
-function get_sprite(root, id)
+    function get_sprite(root, id)
     local a = root.actors[id]
     if not a then
         log.warn("actor <%s> not defined", id)
@@ -28,4 +28,26 @@ function default_animation_graph()
     graph:link{"idle", "idle2item", "item"}
     graph:link{"item", "item2idle", "idle"}
     return graph
+end
+
+function start_chant(root, id)
+    local sprite = get_sprite(root, id)
+    if not sprite.chant then
+        sprite.chant = sprite:child(require "sfx.chant")
+    end
+end
+
+function stop_chant(root, id)
+    local sprite = get_sprite(root, id)
+    if not sprite.chant then return false end
+    sprite.chant:halt()
+    sprite.chant = nil
+    return true
+end
+
+function interrupt_chant(root, id)
+    local sprite = get_sprite(root, id)
+    if stop_chant(root, id) then
+        sprite:queue("idle")
+    end
 end

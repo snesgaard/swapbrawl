@@ -20,6 +20,9 @@ function combotree.update(combo, action_key)
         error(string.format("key %s undefined in combo", action_key))
     end
     local next_state = math.min(#sequence, prev_state + 1)
+    if prev_state == #sequence then
+        next_state = 1
+    end
 
     -- If we wish to reset the combo
     return combo:set("state", dict{[action_key] = next_state})
@@ -34,6 +37,11 @@ function combotree.get_actions(state, id)
         abilities[key] = sequence[state]
     end
     return abilities
+end
+
+function combotree.reset_combo(state, args)
+    local id = args.target
+    return state:map(join("combo", id), combotree.reset)
 end
 
 function combotree.reset(combo)
