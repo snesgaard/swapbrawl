@@ -628,17 +628,9 @@ buffs.blast_oil = {
 }
 
 buffs.brute_oil = {
+    name = "Power Oil",
     type = "weapon",
-    effect = function(state, user, target)
-        return {
-            path="combat.mechanics:true_damage",
-            args={
-                damage=3,
-                user=user,
-                target=target
-            }
-        }
-    end,
+    help = string.stack("Weapon Enhancement", "Deals light True Damage on each hit."),
     ["combat.mechanics:damage"] = function(id, state, info, args)
         if id == args.user then
             return {

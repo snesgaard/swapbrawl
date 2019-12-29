@@ -34,6 +34,7 @@ local buffs = {}
 
 buffs.lifedrain = {
     type = "weapon",
+    help = "Heals light damage on every attack.",
     ["combat.mechanics:damage"] = function(id, state, info, args)
         if id ~= args.user then return end
         return {

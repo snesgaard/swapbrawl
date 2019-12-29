@@ -51,7 +51,6 @@ end
 
 function state:type(id)
     local type_path = self:read(join("actor/type", id))
-    print(id, type_path)
     return require("actor." .. type_path)
 end
 

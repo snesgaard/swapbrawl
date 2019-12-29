@@ -205,9 +205,24 @@ function charbar:__draw(x, y)
     )
     uibar(self.stamina.bar, self.layout.stamina_bar:unpack())
 
-    if self.weapon then
-        self.weapon(self.layout.weapon:unpack())
+    --if self.weapon then
+    --    self.weapon(self.layout.weapon:unpack())
+    --end
+    if self._buff_highlight then
+        local zone = self.layout[self._buff_highlight]
+        if zone then
+            gfx.rectangle("line", zone:expand(6, 6):unpack())
+        end
     end
+
+    gfx.rectangle("line", self.layout.weapon:unpack())
+    gfx.rectangle("line", self.layout.body:unpack())
+    gfx.rectangle("line", self.layout.aura:unpack())
+end
+
+function charbar:buff_highlight(buff_name)
+    self._buff_highlight = buff_name
+    return self
 end
 
 function charbar:set_weapon(drawer)
@@ -249,5 +264,13 @@ end
 charbar.remap["combat.mechanics:true_damage"] = charbar.remap["combat.mechanics:damage"]
 
 charbar.remap["combat.mechanics:heal"] = charbar.remap["combat.mechanics:damage"]
+
+charbar.remap["ui:buff_highlight"] = function(self, buff_type, id)
+    if id ~= self.id then
+        self:buff_highlight()
+    else
+        self:buff_highlight(buff_type)
+    end
+end
 
 return charbar

@@ -68,6 +68,8 @@ local function setup(data, party, foes)
     data.ui.number_server = data.ui:child(require "ui.number_server")
     data.ui.target_marker = data:child(require "sfx.marker")
 
+    data.ui.inspect = data.ui:child(require "ui.inspect_mode", data)
+
     data.ui.turn = data.ui:child(require "ui.turn_queue")
     data.ui.turn.__transform.pos = vec2(gfx.getWidth() - 400, gfx.getHeight() * 0.25)
 
@@ -78,7 +80,6 @@ local function setup(data, party, foes)
     data.ui.help = data.ui:child(require "ui.helpbox")
     data.ui.help.__transform.pos = vec2(gfx.getWidth() - 400, 50)
     data.ui.help:set_size(350)
-    data.ui.help:set_text("This is an attack!")
 
     remap(data)
     remap(data.ui.turn)
@@ -92,17 +93,14 @@ local function setup(data, party, foes)
     data.foes_ids = foes_ids
 
     data.state = state
-
-
 end
 
 local pickers = {}
 
-
 function pickers.action(data, id, opt)
     -- Setup
     while true do
-        local key = event:wait("keypressed")
+        local key = event:wait("controlpressed")
         local u_key = key:upper()
         if opt.combo[key] then return key end
         if opt.combo[u_key] then return u_key end
@@ -124,7 +122,7 @@ function pickers.target(data, user, opt)
 
     -- Setup
     while true do
-        local key = event:wait("inputpressed")
+        local key = event:wait("controlpressed")
         if key == "left" then
             actor_data.target = target.left(target_data, actor_data)
             data.ui.target_marker:positions_from_actor(
@@ -214,16 +212,16 @@ local function player_turn(data, next_id)
     data.ui.command:show()
 
     while not opt.targets do
-        data.ui.help:set_text()
         data.ui.command:select()
         opt.action = pickers.action(data, next_id, opt)
         local help = opt.combo[opt.action].help
-        data.ui.help:set_text(help)
+        data.ui.help:push(help)
         data.ui.command:select(opt.action)
         opt.targets = pickers.target(data, next_id, opt)
+        data.ui.help:pop()
     end
 
-    data.ui.help:set_text()
+    data.ui.help:pop()
     data.ui.command:select()
     data.ui.command:hide()
     local action = opt.combo[opt.action]
@@ -363,6 +361,10 @@ function flow:test(settings)
     self:fork(self.combat)
 end
 
+flow.keymap = {
+    space = "confirm", backspace = "abort", tab = "swap"
+}
+
 flow.remap = {}
 
 flow.remap["combat.buff:apply"] = function(self, state, info, args)
@@ -467,6 +469,30 @@ end
 
 flow.remap["combat.combotree:reset_combo"] = function(self, state, info, args)
     interrupt_chant(self, args.target)
+end
+
+flow.remap["keypressed"] = function(self, key)
+    if key == "lctrl" then
+        self.inspect_mode = true
+        self.ui.inspect:enter()
+    end
+
+    if self.inspect_mode then
+        if key == "left" then
+            self.ui.inspect:left()
+        elseif key == "right" then
+            self.ui.inspect:right()
+        end
+    else
+        event("controlpressed", self.keymap[key] or key)
+    end
+end
+
+flow.remap["keyreleased"] = function(self, key)
+    if key == "lctrl" then
+        self.inspect_mode = false
+        self.ui.inspect:exit()
+    end
 end
 
 return flow

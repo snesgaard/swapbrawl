@@ -3,10 +3,11 @@ local helpbox = {}
 
 function helpbox:create()
     self.opt = {margin=vec2(10, 10), title="<Help>"}
+    self.text = list()
 end
 
 function helpbox:set_text(text)
-    self.text = text
+    error("deprecated")
     return self
 end
 
@@ -16,13 +17,28 @@ function helpbox:set_size(w)
 end
 
 function helpbox:__draw()
-    if not self.text or not self.width then return end
-    textbox(self.text, 0, 0, self.width, nil, self.opt)
+    local text = self.text:tail()
+    if not text or not self.width then return end
+    textbox(text, 0, 0, self.width, nil, self.opt)
 end
 
 function helpbox:test()
     self:set_size(200)
-    self:set_text("Deal heavy damage and stun.")
+    self:push("Deal heavy damage and stun.")
+end
+
+function helpbox:push(text)
+    self.text[#self.text + 1] = text
+    return self
+end
+
+function helpbox:pop()
+    self.text[#self.text] = nil
+    return self
+end
+
+function helpbox:swap(text)
+    return self:pop():push(text)
 end
 
 return helpbox

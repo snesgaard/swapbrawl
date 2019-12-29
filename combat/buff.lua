@@ -35,6 +35,10 @@ function buff.weapon_buff(state, id)
     return state:read(join("buff/weapon", id))
 end
 
+function buff.read(state, type, id)
+    return state:read(join("buff", type, id))
+end
+
 function buff.react(path, state, info, args)
     local buffs = state:read("buff")
     local transforms = list()
