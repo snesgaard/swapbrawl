@@ -122,7 +122,7 @@ actions.firewall = {
     transform = function(state, user, target)
         local damage = {
             path="combat.mechanics:damage", args={
-                user=user, target=target, damage=8
+                user=user, target=target, damage=10
             }
         }
         return damage, damage, damage

@@ -248,4 +248,6 @@ end
 
 charbar.remap["combat.mechanics:true_damage"] = charbar.remap["combat.mechanics:damage"]
 
+charbar.remap["combat.mechanics:heal"] = charbar.remap["combat.mechanics:damage"]
+
 return charbar

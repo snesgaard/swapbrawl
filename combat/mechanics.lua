@@ -40,6 +40,7 @@ function mech.heal(state, args)
         heal = actual_heal, target = args.target,
         health = next_health
     }
+    print(dict(info), args.heal, actual_heal, health)
     return next_state, info
 end
 

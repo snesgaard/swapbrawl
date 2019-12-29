@@ -163,6 +163,7 @@ local function load_ability(type_info, path)
     if not type_info then
         return default_ability(path)
     end
+    if type(path) == "table" then return path end
     local actions = type_info.actions or {}
     return actions[path] or default_ability(path)
 end
@@ -173,9 +174,10 @@ end
 
 local function ai_turn(data, next_id)
     local ai = require "combat.ai"
-    local next_ai_state, action, targets = ai.update(data.state, next_id)
+    local action, targets, next_ai_state = ai.update(data.state, next_id)
     data.state = ai.write_state(data.state, next_id, next_ai_state)
     action = load_ability(data.state:type(next_id), action)
+    print(targets)
     local args = {action=action, target=targets}
     log.info(
         "Action picked %s %s %s", next_id, action.name, tostring(targets)
@@ -262,6 +264,7 @@ local function execute(data, action, user, targets, key)
     local next_state, epic = data.state:transform(
         t(data.state, user, unpack(targets or {}))
     )
+    log.info("%s", tostring(next_state:read("actor/health")))
     if next_state and epic then
         data.state = next_state
         if action.animation then

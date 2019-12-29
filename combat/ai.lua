@@ -11,11 +11,18 @@ end
 function ai.update(state, id)
     local actor_type = state:type(id)
     local ai_state = ai.read_state(state, id)
+
     if not actor_type.ai then
-        return dict{}, "pass", {id}
+        return "pass", {id}, dict{}
     end
-    local next_ai_state, action, targets = actor_type.ai(state, ai_state, id)
-    return next_ai_state, action, targets
+
+    local action, targets, next_ai_state = actor_type.ai(state, id, ai_state)
+
+    if not action then
+        return "pass", {id}, dict{}
+    end
+
+    return action, targets, next_ai_state
 end
 
 function ai.write_state(state, id, next_ai_state)
