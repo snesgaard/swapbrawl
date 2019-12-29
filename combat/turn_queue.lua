@@ -41,6 +41,10 @@ function turn_queue.new_turn(state, args)
         :map("turn/number", function(n) return n + 1 end)
 end
 
+function turn_queue.end_of_turn(state, args)
+    return state
+end
+
 function turn_queue.pending(state, args)
     return state:read("turn/pending")
 end

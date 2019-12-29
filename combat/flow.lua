@@ -314,6 +314,7 @@ local function round(data)
     --event:sleep(1.0)
     execute_queue(data)
     end_of_round(data)
+    update_state(data, {path="combat.turn_queue:end_of_turn"})
 end
 
 local flow = {}

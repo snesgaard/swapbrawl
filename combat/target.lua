@@ -14,11 +14,23 @@ local function get_init_target(target_data, actors)
     if target_data.type == "self" then
         return actors.user
     elseif target_data.type == "single" then
-        return same_side and friend_init or foe_init
+        if same_side then
+            return friend_init or foe_init
+        else
+            return foe_init or friend_init
+        end
     elseif target_data.type == "side" then
-        return same_side and friend_init or foe_init
+        if same_side then
+            return friend_init or foe_init
+        else
+            return foe_init or friend_init
+        end
     elseif target_data.type == "all" then
-        return same_side and friend_init or foe_init
+        if same_side then
+            return friend_init or foe_init
+        else
+            return foe_init or friend_init
+        end
     else
         error(string.format("unknown type %s", target_data.type))
     end
