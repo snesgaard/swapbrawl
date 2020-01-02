@@ -31,6 +31,8 @@ function buff.apply(state, args)
     return next_state, info
 end
 
+function buff.activate(state) return state end
+
 function buff.weapon_buff(state, id)
     return state:read(join("buff/weapon", id))
 end
@@ -46,7 +48,15 @@ function buff.react(path, state, info, args)
         for id, data in pairs(buffs[type]) do
             local f = data[path]
             if f then
-                transforms = transforms + list(f(id, state, info, args))
+                local l = list(f(id, state, info, args))
+                if #l > 0 then
+                    transforms[#transforms + 1] = {
+                        path="combat.buff:activate", args = {
+                            user=id, type=type
+                        }
+                    }
+                    transforms = transforms + l
+                end
             end
         end
     end

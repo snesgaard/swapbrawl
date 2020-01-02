@@ -1,6 +1,30 @@
 local charbar = {}
 local uibar = require "ui.bar"
 
+local ping = {}
+
+function ping:create(pos)
+    self.radius = 0
+    self.alpha = 2
+    self.thickness = 3
+    self.__transform.pos = pos
+    self:fork(ping.life)
+end
+
+function ping:__draw()
+    gfx.setLineWidth(self.thickness)
+    gfx.setColor(0.7, 0.7, 0.1, self.alpha)
+    gfx.circle("line", 0, 0, self.radius)
+end
+
+function ping:life()
+    local t = tween(0.3, self, {radius=40, alpha=0})
+        :ease(ease.outQuad)
+    event:wait(t, "finish")
+    self:destroy()
+    print("free")
+end
+
 function charbar:create()
     self.drawstack = DrawStack.create()
     self.stamina = {
@@ -270,9 +294,23 @@ function charbar:set_position(index)
     return self
 end
 
+function charbar:ping(buff_type)
+    local p = self.layout[buff_type]
+    if not p then
+        local msg = string.format("invalid buff type <%s>", buff_type)
+        error(msg)
+    end
+    local n = self:child(ping, p:center())
+end
+
 function charbar:test()
     self:set_user_icon("weapon", "art/ui:buff_icons/venom_oil")
+    for i = 1, 10 do
+        self:ping("weapon")
+        event:sleep(0.1)
+    end
 end
+
 
 charbar.remap = {}
 
@@ -303,6 +341,11 @@ charbar.remap["combat.buff:apply"] = function(self, state, info, args)
     if buff.icon then
         self:set_user_icon(buff.type, buff.icon)
     end
+end
+
+charbar.remap["combat.buff:activate"] = function(self, state, info, args)
+    if self.id ~= args.user then return end
+    self:ping(args.type)
 end
 
 return charbar
