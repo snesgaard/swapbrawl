@@ -643,10 +643,7 @@ buffs.brute_oil = {
             }
         end
     end,
-    icon = function(x, y, w, h)
-        gfx.setColor(1, 0, 0)
-        gfx.rectangle("fill", x, y, w, h, 5)
-    end,
+    icon = "art/ui:buff_icons/power_oil",
 }
 
 buffs.brilliant_oil = {
@@ -665,12 +662,10 @@ buffs.brilliant_oil = {
 
 buffs.bile_oil = {
     type = "weapon",
+    icon = "art/ui:buff_icons/venom_oil",
+    help = "Each hit inflicts Poison damage.",
     effect = function(state, user, target)
         return {path="combat.ailments:poison_damage", args={target=target}}
-    end,
-    icon = function(x, y, w, h)
-        gfx.setColor(1.0, 0.1, 0.7)
-        gfx.rectangle("fill", x, y, w, h, 5)
     end,
     ["combat.mechanics:damage"] = function(id, state, info, args)
         print("yo")

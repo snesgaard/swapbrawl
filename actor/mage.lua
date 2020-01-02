@@ -46,10 +46,7 @@ buffs.lifedrain = {
             }
         }
     end,
-    icon = function(x, y, w, h)
-        gfx.setColor(0, 0, 0)
-        gfx.rectangle("fill", x, y, w, h, 5)
-    end,
+    icon = "art/ui:buff_icons/lifedrain",
 }
 
 actor.actions = {}
@@ -121,18 +118,27 @@ actions.firewall = {
     target = {type="single", side="other"},
     help = "Deal medium damage thrice.",
     transform = function(state, user, target)
-        local damage = {
-            path="combat.mechanics:damage", args={
-                user=user, target=target, damage=10
+        local function damage(tag)
+            return {
+                path="combat.mechanics:damage", args={
+                    user=user, target=target, damage=10
+                }, tag=tag
             }
-        }
-        return damage, damage, damage
+        end
+        return damage("A"), damage("B"), damage("C")
     end,
     animation = declare_animation(function(root, epic, user, target)
         local target_sprite = get_sprite(root, target)
         local sfx = target_sprite:child(require "sfx.flame")
-        for _, epoch in ipairs(epic) do
-            root:broadcast(epoch)
+        local tags = {"A", "B", "C"}
+        for i, tag in ipairs(tags) do
+            local init = epic[tag]
+            local stop = epic[tags[i + 1]]  or (#epic + 1)
+            List.iter(
+                epic,
+                function(epoch) root:broadcast(epoch) end,
+                init, stop - 1
+            )
             event:sleep(0.35)
         end
         sfx:stop()

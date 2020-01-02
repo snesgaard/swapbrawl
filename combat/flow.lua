@@ -367,15 +367,6 @@ flow.keymap = {
 
 flow.remap = {}
 
-flow.remap["combat.buff:apply"] = function(self, state, info, args)
-    local ui = self.ui[args.target]
-    if info.buff.icon then
-        if info.buff.type == "weapon" then
-            ui:set_weapon(info.buff.icon)
-        end
-    end
-end
-
 flow.remap["combat.mechanics:damage"] = function(self, state, info, args)
     local sprite = get_sprite(self, info.target)
     sprite:shake()

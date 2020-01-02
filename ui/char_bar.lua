@@ -46,6 +46,14 @@ function charbar:create()
         }
     }
     self.layout = self:build_layout()
+    self.icons = {
+        weapon=get_atlas("art/ui"):get_frame("buff_icons/weapon"),
+        body=get_atlas("art/ui"):get_frame("buff_icons/body"),
+        soul=get_atlas("art/ui"):get_frame("buff_icons/soul")
+    }
+    self.user_icons = {
+
+    }
 end
 
 function charbar:set_stamina(value, max)
@@ -117,11 +125,11 @@ function charbar:build_layout()
     layout.bound = layout.icon
         :join(layout.hp_value, layout.stamina_value)
         :compile()
-        :expand(25, 15)
+        :expand(26, 16)
 
     layout.weapon = layout.bound:up(10, 5, 20, 20)
     layout.body = layout.weapon:right(10, 0)
-    layout.aura = layout.body:right(10, 0)
+    layout.soul = layout.body:right(10, 0)
 
     return layout
 end
@@ -205,9 +213,6 @@ function charbar:__draw(x, y)
     )
     uibar(self.stamina.bar, self.layout.stamina_bar:unpack())
 
-    --if self.weapon then
-    --    self.weapon(self.layout.weapon:unpack())
-    --end
     if self._buff_highlight then
         local zone = self.layout[self._buff_highlight]
         if zone then
@@ -215,9 +220,19 @@ function charbar:__draw(x, y)
         end
     end
 
-    gfx.rectangle("line", self.layout.weapon:unpack())
-    gfx.rectangle("line", self.layout.body:unpack())
-    gfx.rectangle("line", self.layout.aura:unpack())
+    for _, key in ipairs{"weapon", "body", "soul"} do
+        local zone = self.layout[key]
+        local user_icon = self.user_icons[key]
+        if not user_icon then
+            --gfx.setColor(COLORS.vanguard)
+            --gfx.rectangle("fill", zone:unpack(2))
+            --gfx.setColor(1, 1, 1, 0.3)
+            --self.icons[key]:draw(zone.x, zone.y)
+        else
+            gfx.setColor(1, 1, 1)
+            user_icon:draw(zone.x, zone.y)
+        end
+    end
 end
 
 function charbar:buff_highlight(buff_name)
@@ -225,8 +240,13 @@ function charbar:buff_highlight(buff_name)
     return self
 end
 
-function charbar:set_weapon(drawer)
-    self.weapon = drawer
+function charbar:set_user_icon(type, path)
+    if not path then
+        self.user_icons[type] = nil
+    else
+        local atlas, image = unpack(string.split(path, ":"))
+        self.user_icons[type] = get_atlas(atlas):get_frame(image)
+    end
     return self
 end
 
@@ -250,6 +270,10 @@ function charbar:set_position(index)
     return self
 end
 
+function charbar:test()
+    self:set_user_icon("weapon", "art/ui:buff_icons/venom_oil")
+end
+
 charbar.remap = {}
 
 charbar.remap["combat.mechanics:damage"] = function(self, state, info)
@@ -270,6 +294,14 @@ charbar.remap["ui:buff_highlight"] = function(self, buff_type, id)
         self:buff_highlight()
     else
         self:buff_highlight(buff_type)
+    end
+end
+
+charbar.remap["combat.buff:apply"] = function(self, state, info, args)
+    if self.id ~= args.target then return end
+    local buff = args.buff
+    if buff.icon then
+        self:set_user_icon(buff.type, buff.icon)
     end
 end
 
