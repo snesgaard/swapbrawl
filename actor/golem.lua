@@ -22,7 +22,7 @@ golem.atlas = "art/main_actors"
 
 function golem.basestats()
     return {
-        health = 80,
+        health = 200,
         agility = 10,
     }
 end

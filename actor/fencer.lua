@@ -630,7 +630,7 @@ buffs.blast_oil = {
 buffs.brute_oil = {
     name = "Power Oil",
     type = "weapon",
-    help = string.stack("Weapon Enhancement", "Deals light True Damage on each hit."),
+    help = string.stack("Deals light True Damage on each hit."),
     ["combat.mechanics:damage"] = function(id, state, info, args)
         if id == args.user then
             return {
@@ -664,6 +664,7 @@ buffs.bile_oil = {
     type = "weapon",
     icon = "art/ui:buff_icons/venom_oil",
     help = "Each hit inflicts Poison damage.",
+    name = "Venom Oil",
     effect = function(state, user, target)
         return {path="combat.ailments:poison_damage", args={target=target}}
     end,

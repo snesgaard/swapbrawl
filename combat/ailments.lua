@@ -117,8 +117,12 @@ function ailments.end_of_round(state, args)
     end
     local post_transforms = {}
     if info.duration.poison > 0 then
+        local health, max_health = state:health(target)
+        local damage = math.floor(max_health / 20)
         post_transforms[#post_transforms + 1] = {
-            path="combat.mechanics:true_damage", args={target=target, damage=2}
+            path="combat.mechanics:true_damage", args={
+                target=target, damage=damage
+            }
         }
     end
 

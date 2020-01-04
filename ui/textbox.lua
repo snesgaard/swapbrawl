@@ -34,6 +34,7 @@ end
 
 function textbox:__call(text, x, y, w, h, opt)
     opt = opt or {}
+    text = text or ""
     local font = opt.font or font(12)
     local default_w, default_h = self:get_shape(text, w, opt)
     w = w or default_w
@@ -44,8 +45,12 @@ function textbox:__call(text, x, y, w, h, opt)
     local text_border = spatial(x, y, w, h)
         :move(margin.x, margin.y)
         :expand(margin.x * 2, margin.y * 2)
+    local title_width = math.max(
+        font:getWidth(opt.title or "") + margin.x,
+        100
+    )
     local title_border = text_border
-        :up(10, 0, 100, 15)
+        :up(10, 0, title_width, 15)
         :expand(margin.x, margin.y, "left", "bottom")
     local title_text = title_border
         :expand(-margin.x, -margin.y)
@@ -66,8 +71,8 @@ function textbox:__call(text, x, y, w, h, opt)
             color = opt.color
         }
         textbox.draw_text(
-            opt.title, title_text.x, title_text.y, title_text.w, title_text.h, font,
-            title_opt
+            opt.title, title_text.x, title_text.y, title_text.w, title_text.h,
+            font, title_opt
         )
     end
 end

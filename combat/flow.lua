@@ -215,7 +215,7 @@ local function player_turn(data, next_id)
         data.ui.command:select()
         opt.action = pickers.action(data, next_id, opt)
         local help = opt.combo[opt.action].help
-        data.ui.help:push(help)
+        data.ui.help:push(help or "")
         data.ui.command:select(opt.action)
         opt.targets = pickers.target(data, next_id, opt)
         data.ui.help:pop()
@@ -318,7 +318,7 @@ end
 local flow = {}
 
 function flow:create(party, foes)
-    party = party or list("fencer", "mage")
+    party = party or list("fencer", "vampire", "mage")
     foes = foes or list("golem")
     setup(self, party, foes)
 end

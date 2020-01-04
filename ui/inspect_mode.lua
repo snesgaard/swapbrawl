@@ -51,6 +51,18 @@ function inspect_mode:size()
     return #self.inspectables
 end
 
+function inspect_mode:format_text(buff)
+    local type = buff.type
+    local type2text = {
+        weapon = "Weapon",
+        body = "Body",
+        soul = "Soul",
+    }
+
+    local text = string.stack(buff.name or "N/A", "", buff.help or "No Help")
+    return text, type2text[type]
+end
+
 function inspect_mode:update_ui(initial)
     if not self:valid_state() then return end
 
@@ -64,7 +76,7 @@ function inspect_mode:update_ui(initial)
     local char_ui = parent.ui[id]
     event("ui:buff_highlight", buff_name, id)
     -- We assume text has already been pushed upon entering
-    parent.ui.help:swap(text)
+    parent.ui.help:swap(inspect_mode:format_text(buff_data))
     -- Still needs to do other stuff here
 end
 
@@ -84,10 +96,10 @@ function inspect_mode:get_inspectable()
     local inspectables = list()
     local pos = parent.state:position()
 
-    for i = 1, 3 do
+    for i = 3, 1, -1 do
         local id = pos[i]
         if id then
-            for _, key in ipairs{"weapon", "body", "aura"} do
+            for _, key in ipairs{"weapon", "body", "soul"} do
                 if buff.read(parent.state, key, id) then
                     inspectables[#inspectables + 1] = list(id, key)
                 end

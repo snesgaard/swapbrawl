@@ -26,13 +26,14 @@ end
 actor.combo = {
     A={"chant_mass_shield", "mass_shield"},
     W={"chant_firewall", "firewall"},
-    S={"chant_empower", "empower"},
-    D={"chant_lifedrain", "lifedrain"}
+    S={"mirror_soul"},
+    D={"lifedrain"}
 }
 
 local buffs = {}
 
 buffs.lifedrain = {
+    name = "Lifedrain",
     type = "weapon",
     help = "Heals light damage on every attack.",
     ["combat.mechanics:damage"] = function(id, state, info, args)
@@ -40,13 +41,55 @@ buffs.lifedrain = {
         return {
             path="combat.mechanics:heal",
             args={
-                heal=4,
+                heal=1,
                 user=args.user,
                 target=args.user
             }
         }
     end,
     icon = "art/ui:buff_icons/lifedrain",
+}
+
+buffs.mirror_soul = {
+    name="Soul Mirror",
+    type="soul",
+    help="Whenever an ally gains a weapon or body enchantment, clone it.",
+    ["combat.buff:apply"] = function(id, state, info, args)
+        if id == args.target or args.mirror_soul then
+            return
+        end
+        if state:position(id) * state:position(args.target) < 0 then
+            return
+        end
+        if args.buff.type ~= "weapon" and args.buff.type ~= "body" then
+            return
+        end
+
+
+        return {
+            path="combat.buff:apply",
+            args={
+                buff=args.buff,
+                target=id,
+                mirror_soul=true
+            }
+        }
+    end
+}
+
+buffs.blood_rage = {
+    name="Blood Rage",
+    type="body",
+    help="Take light damage at the end of the round.",
+    ["combat.turn_queue:end_of_round"] = function(id, state, info, args)
+        return {
+            path="combat.mechanics:true_damage",
+            args={
+                target=id,
+                damage=4
+            }
+        }
+    end
 }
 
 actor.actions = {}
@@ -73,6 +116,7 @@ actions.chant_mass_shield = declare_chant("Chant: Mass Shield", "Prepare casting
 actions.chant_firewall = declare_chant("Chant: Firewall", "Prepare casting Firewall.")
 actions.chant_empower = declare_chant("Chant: Empower", "Prepare casting Empower.")
 actions.chant_lifedrain = declare_chant("Chant: Lifedrain", "Prepare casting Lifedrain.")
+actions.chant_mirror_soul = declare_chant("Chant: Mirror Soul", "Prepare casting mirror soul.")
 
 local function declare_animation(casting_func)
     return function(root, epic, user, ...)
@@ -95,6 +139,19 @@ local function declare_animation(casting_func)
         sprite:queue("cast2idle", "idle")
     end
 end
+
+actions.mirror_soul = {
+    name = "Soul Mirror",
+    target = {type="single", side="same"},
+    help = "Casts Soul Enchantment: Soul Mirror.",
+    transform = function(state, user, target)
+        return {
+            path="combat.buff:apply",
+            args={target=target, buff=buffs.mirror_soul}
+        }
+    end,
+    animation = declare_animation()
+}
 
 actions.mass_shield = {
     name = "Mass Shield",
@@ -160,7 +217,7 @@ actions.empower = {
 actions.lifedrain = {
     name = "Lifedrain",
     target = {type="single", side="same"},
-    help = "Weapon enchantment.\n\nHeals on every attack.",
+    help = "Cast Weapon Enchantment: Lifedrain.",
     transform = function(state, user, target)
         return {
             path="combat.buff:apply",

@@ -1,6 +1,7 @@
 --require "lovedebug"
 require "nodeworks"
 require "combat.shortcuts"
+require "ui.update_sprite"
 
 function love.load(arg)
     log.outfile = "./log.txt"

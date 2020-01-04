@@ -1,5 +1,5 @@
 local function check_buff(buff)
-    return buff == "weapon" or buff == "body" or buff == "aura"
+    return buff == "weapon" or buff == "body" or buff == "soul"
 end
 
 local buff = {}
@@ -8,7 +8,7 @@ function buff.init_state(state)
     state.buff = dict{
         weapon = dict{},
         body = dict{},
-        aura = dict{}
+        soul = dict{}
     }
 end
 
@@ -31,6 +31,7 @@ function buff.apply(state, args)
     return next_state, info
 end
 
+-- Dummy function, simply used for signaling the activation of a buff
 function buff.activate(state) return state end
 
 function buff.weapon_buff(state, id)
@@ -44,7 +45,7 @@ end
 function buff.react(path, state, info, args)
     local buffs = state:read("buff")
     local transforms = list()
-    for _, type in ipairs{"weapon", "body", "aura"} do
+    for _, type in ipairs{"weapon", "body", "soul"} do
         for id, data in pairs(buffs[type]) do
             local f = data[path]
             if f then

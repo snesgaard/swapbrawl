@@ -19,6 +19,8 @@ end
 function helpbox:__draw()
     local text = self.text:tail()
     if not text or not self.width then return end
+    local text, title = unpack(self.text:tail())
+    self.opt.title = title or "<Help>"
     textbox(text, 0, 0, self.width, nil, self.opt)
 end
 
@@ -27,8 +29,11 @@ function helpbox:test()
     self:push("Deal heavy damage and stun.")
 end
 
-function helpbox:push(text)
-    self.text[#self.text + 1] = text
+function helpbox:push(text, title)
+    if not text then
+        error("you cannot push an empty text field")
+    end
+    self.text[#self.text + 1] = {text, title}
     return self
 end
 
@@ -37,8 +42,8 @@ function helpbox:pop()
     return self
 end
 
-function helpbox:swap(text)
-    return self:pop():push(text)
+function helpbox:swap(...)
+    return self:pop():push(...)
 end
 
 return helpbox

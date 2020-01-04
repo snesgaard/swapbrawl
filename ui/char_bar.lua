@@ -264,9 +264,17 @@ function charbar:buff_highlight(buff_name)
     return self
 end
 
+local default_icon = gfx.prerender(20, 20, function(w, h)
+
+end)
+
 function charbar:set_user_icon(type, path)
     if not path then
-        self.user_icons[type] = nil
+        self.user_icons[type] = {
+            draw = function(self, x, y)
+                gfx.rectangle("fill", x, y, 20, 20)
+            end
+        }
     else
         local atlas, image = unpack(string.split(path, ":"))
         self.user_icons[type] = get_atlas(atlas):get_frame(image)
@@ -338,9 +346,7 @@ end
 charbar.remap["combat.buff:apply"] = function(self, state, info, args)
     if self.id ~= args.target then return end
     local buff = args.buff
-    if buff.icon then
-        self:set_user_icon(buff.type, buff.icon)
-    end
+    self:set_user_icon(buff.type, buff.icon)
 end
 
 charbar.remap["combat.buff:activate"] = function(self, state, info, args)
