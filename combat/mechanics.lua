@@ -52,6 +52,10 @@ function mech.damage(state, args)
 
     -- Final state damage calculation
     local damage = args.damage
+    if type(damage) == "function" then
+        damage = damage(state, args)
+    end
+    damage = math.max(damage, 0)
     local charged = state:read("actor/charge/" .. args.user)
     local shielded = state:read("actor/shield/" .. args.target)
     local health = state:read("actor/health/" .. args.target) or 0
@@ -90,9 +94,14 @@ function mech.damage(state, args)
 end
 
 function mech.true_damage(state, args)
+    local damage = args.damage
+    if type(damage) == "function" then
+        damage = damage(state, args)
+    end
+    damage = math.max(damage, 0)
     local history = list()
     local health = state:read("actor/health/" .. args.target)
-    local actual_damage = math.min(health, args.damage)
+    local actual_damage = math.min(health, damage)
     local next_health = health - actual_damage
     local info = {
         damage = actual_damage, target = args.target,

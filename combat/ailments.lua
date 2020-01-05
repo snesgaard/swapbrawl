@@ -57,7 +57,7 @@ function ailments.damage(state, args)
     duration = duration or 0
     res = res or 1
     damage = damage or 0
-    increase = increase or 3
+    increase = increase or 1
     local active = duration > 0
     local next_damage = not active and (damage + args_damage) or 0
     local activated = next_damage >= res

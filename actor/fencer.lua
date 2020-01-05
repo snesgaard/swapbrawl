@@ -334,7 +334,7 @@ actions.flash_bang = {
             args={damage=3, user=user, target=target}
         }, {
             path="combat.ailments:stun_damage",
-            args={damage=2, target = target}
+            args={damage=1, target = target}
         }
     end,
 

@@ -72,3 +72,12 @@ end
 function state:stamina(id)
     return self:read("actor/stamina/" .. id), self:read("actor/max_stamina/" .. id)
 end
+
+function state:allies(id)
+    local index = self:position(id)
+    return self:position()
+        :filter(function(k) return type(k) == "number" end)
+        :filter(function(k) return k * index > 0 end)
+        :filter(function(k, other) return id ~= other end)
+        :values()
+end

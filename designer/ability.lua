@@ -40,7 +40,7 @@ local function load_ability(ability_path)
 end
 
 local function split_path(path)
-    return unpack(string.split(path, ':'))
+    return string.split(path, ':')
 end
 
 local function load(arg)
@@ -52,7 +52,8 @@ local function load(arg)
         return {type = t}
     end
 
-    local actor_path, action_name = split_path(arg[1])
+    local paths = split_path(arg[1])
+    local actor_path = paths[1]
 
     nodes.battle = nodes:child(
         require("combat.flow"),
@@ -60,16 +61,20 @@ local function load(arg)
         list("mage", "alchemist")
     )
 
-    if not action_name then return end
-
     local type_info = require("actor." .. actor_path)
 
     local actions = type_info.actions or {}
-    local action = actions[action_name]
 
-    if not action then return end
-
-    nodes.battle:execute(action, nodes.battle.party_ids:head())
+    local co = coroutine.create(function()
+        for i = 2, #paths do
+            local action = actions[paths[i]]
+            if action then
+                nodes.battle:execute(action, nodes.battle.party_ids:head())
+                event:wait(nodes.battle, "exection_complete")
+            end
+        end
+    end)
+    coroutine.resume(co)
 end
 
 function love.load(arg)

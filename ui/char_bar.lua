@@ -152,8 +152,8 @@ function charbar:build_layout()
         :expand(26, 16)
 
     layout.weapon = layout.bound:up(10, 5, 20, 20)
-    layout.body = layout.weapon:right(10, 0)
-    layout.soul = layout.body:right(10, 0)
+    layout.body = layout.bound:up(0, 5, 20, 20, "center")
+    layout.soul = layout.bound:up(-10, 5, 20, 20, "right")
 
     return layout
 end
@@ -283,6 +283,12 @@ function charbar:set_user_icon(type, path)
 end
 
 
+function charbar:remove_user_icon(type)
+    self.user_icons[type] = nil
+    return self
+end
+
+
 function charbar:position(index)
     local oy = -200
     if index <= 3 then
@@ -347,6 +353,12 @@ charbar.remap["combat.buff:apply"] = function(self, state, info, args)
     if self.id ~= args.target then return end
     local buff = args.buff
     self:set_user_icon(buff.type, buff.icon)
+end
+
+charbar.remap["combat.buff:remove"] = function(self, state, info, args)
+    if self.id ~= args.target then return end
+    if not info.removed then return end
+    self:remove_user_icon(info.removed.type)
 end
 
 charbar.remap["combat.buff:activate"] = function(self, state, info, args)

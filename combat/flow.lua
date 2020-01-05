@@ -273,6 +273,7 @@ local function execute(data, action, user, targets, key)
         end
     end
     log.info("Execution completed")
+    event(data, "exection_complete")
 end
 
 local function execute_queue(data)
@@ -332,7 +333,6 @@ end
 function flow:execute(action, user, targets)
     if not targets then
         targets = target.random(self.state, user, action.target)
-        print(targets)
     end
     return self:fork(execute, action, user, targets)
 end

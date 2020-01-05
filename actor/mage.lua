@@ -1,3 +1,6 @@
+local common = require "actor.common"
+local buff = require "combat.buff"
+
 local actor = {}
 
 actor.icon = {"art/icons", "mage"}
@@ -24,9 +27,9 @@ function actor.basestats()
 end
 
 actor.combo = {
-    A={"chant_mass_shield", "mass_shield"},
+    A={"chant_aegis", "aegis"},
     W={"chant_firewall", "firewall"},
-    S={"mirror_soul"},
+    S={"chant_mirror_of_body", "mirror_of_body"},
     D={"lifedrain"}
 }
 
@@ -34,7 +37,7 @@ local buffs = {}
 
 buffs.lifedrain = {
     name = "Lifedrain",
-    type = "weapon",
+    type = "body",
     help = "Heals light damage on every attack.",
     ["combat.mechanics:damage"] = function(id, state, info, args)
         if id ~= args.user then return end
@@ -77,68 +80,25 @@ buffs.mirror_soul = {
     end
 }
 
-buffs.blood_rage = {
-    name="Blood Rage",
-    type="body",
-    help="Take light damage at the end of the round.",
-    ["combat.turn_queue:end_of_round"] = function(id, state, info, args)
-        return {
-            path="combat.mechanics:true_damage",
-            args={
-                target=id,
-                damage=4
-            }
-        }
-    end
-}
-
 actor.actions = {}
 
 local actions = actor.actions
 
-local function declare_chant(name, help)
-    return {
-        name=name,
-        help=help,
-        target={type="self"},
-        animation = function(root, epic, user)
-            local sprite = get_sprite(root, user)
-            if not sprite.chant then
-                sprite.chant = sprite:child(require "sfx.chant")
-            end
-            sprite:queue("idle2chant", "chant")
-            event:sleep(0.5)
-        end
-    }
-end
-
-actions.chant_mass_shield = declare_chant("Chant: Mass Shield", "Prepare casting Mass Shield.")
-actions.chant_firewall = declare_chant("Chant: Firewall", "Prepare casting Firewall.")
-actions.chant_empower = declare_chant("Chant: Empower", "Prepare casting Empower.")
-actions.chant_lifedrain = declare_chant("Chant: Lifedrain", "Prepare casting Lifedrain.")
-actions.chant_mirror_soul = declare_chant("Chant: Mirror Soul", "Prepare casting mirror soul.")
-
-local function declare_animation(casting_func)
-    return function(root, epic, user, ...)
-        local sprite = get_sprite(root, user)
-        sprite:queue({"chant2cast", loop=false})
-        event:wait(sprite, "finish")
-        sprite:queue("cast")
-
-        if casting_func then
-            casting_func(root, epic, user, ...)
-        else
-            root:broadcast(unpack(epic))
-            event:sleep(0.7)
-        end
-
-        if sprite.chant then
-            sprite.chant:halt()
-            sprite.chant = nil
-        end
-        sprite:queue("cast2idle", "idle")
-    end
-end
+actions.chant_mass_shield = common.declare_chant(
+    "Chant: Mass Shield", "Prepare casting Mass Shield."
+)
+actions.chant_firewall = common.declare_chant(
+    "Chant: Firewall", "Prepare casting Firewall."
+)
+actions.chant_empower = common.declare_chant(
+    "Chant: Empower", "Prepare casting Empower."
+)
+actions.chant_lifedrain = common.declare_chant(
+    "Chant: Lifedrain", "Prepare casting Lifedrain."
+)
+actions.chant_mirror_soul = common.declare_chant(
+    "Chant: Mirror Soul", "Prepare casting mirror soul."
+)
 
 actions.mirror_soul = {
     name = "Soul Mirror",
@@ -150,7 +110,7 @@ actions.mirror_soul = {
             args={target=target, buff=buffs.mirror_soul}
         }
     end,
-    animation = declare_animation()
+    animation = common.declare_cast_animation()
 }
 
 actions.mass_shield = {
@@ -167,7 +127,7 @@ actions.mass_shield = {
             end)
         return unpack(actions)
     end,
-    animation = declare_animation()
+    animation = common.declare_cast_animation()
 }
 
 actions.firewall = {
@@ -184,7 +144,7 @@ actions.firewall = {
         end
         return damage("A"), damage("B"), damage("C")
     end,
-    animation = declare_animation(function(root, epic, user, target)
+    animation = common.declare_cast_animation(function(root, epic, user, target)
         local target_sprite = get_sprite(root, target)
         local sfx = target_sprite:child(require "sfx.flame")
         local tags = {"A", "B", "C"}
@@ -211,7 +171,7 @@ actions.empower = {
             path = "combat.mechanics:charge", args={target=target}
         }
     end,
-    animation = declare_animation()
+    animation = common.declare_cast_animation()
 }
 
 actions.lifedrain = {
@@ -221,10 +181,60 @@ actions.lifedrain = {
     transform = function(state, user, target)
         return {
             path="combat.buff:apply",
-            args={target=target, buff=buffs.lifedrain}
+            args={target=user, buff=buffs.lifedrain}
         }
     end,
-    animation = declare_animation()
+    animation = common.declare_cast_animation()
+}
+
+actions.chant_aegis = common.declare_chant(
+    "Chant: Aegis", "Prepare casting Aegis."
+)
+
+actions.aegis = {
+    name = "Aegis",
+    target = {type="single", side="same"},
+    help = "Light heal and grant SHIELD.",
+    transform = function(state, user, target)
+        return {
+            path="combat.mechanics:heal",
+            args={target=target, user=user, heal=5}
+        }, {
+            path="combat.mechanics:shield",
+            args={target=target}
+        }
+    end,
+    animation = common.declare_cast_animation()
+}
+
+actions.chant_mirror_of_body = common.declare_chant(
+    "Chant: Mirror of Body", "Prepare casting Mirror of Body."
+)
+
+actions.mirror_of_body = {
+    name = "Mirror of Body",
+    target = {type="single", side="same"},
+    help = "Dispel Body Enchantment from target.\nTarget's ally gains the Enchantment.",
+    transform = function(state, user, target)
+        local body_buff = buff.read(state, "body", target)
+        if not body_buff then return end
+
+        local allies = state:allies(target)
+        local transforms = {
+            {
+                path="combat.buff:remove",
+                args={target=target, type="body"}
+            }
+        }
+        for _, id in pairs(allies) do
+            transforms[#transforms + 1] = {
+                path="combat.buff:apply",
+                args={target=id, buff=body_buff}
+            }
+        end
+
+        return unpack(transforms)
+    end
 }
 
 return actor

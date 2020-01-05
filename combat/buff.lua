@@ -31,6 +31,23 @@ function buff.apply(state, args)
     return next_state, info
 end
 
+function buff.remove(state, args)
+    local type = args.type
+    local target = args.target
+
+    if not check_buff(type) then
+        error(string.format("Invalid buff type, <%s>", type))
+    end
+
+    local current_buff = buff.read(state, type, target)
+
+    local info = {
+        removed = current_buff,
+    }
+
+    return buff.write(state, type, target), info
+end
+
 -- Dummy function, simply used for signaling the activation of a buff
 function buff.activate(state) return state end
 
@@ -40,6 +57,19 @@ end
 
 function buff.read(state, type, id)
     return state:read(join("buff", type, id))
+end
+
+function buff.write(state, type, id, data)
+    return state:write(join("buff", type, id), data)
+end
+
+function buff.has(state, id, buff_data)
+    for _, type in ipairs{"weapon", "body", "soul"} do
+        if buff.read(state, type, id) == buff_data then
+            return true
+        end
+    end
+    return false
 end
 
 function buff.react(path, state, info, args)
