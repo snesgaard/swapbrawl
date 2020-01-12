@@ -2,6 +2,25 @@ local buff = require "combat.buff"
 
 local mech = {}
 
+mech.elements = {"physical", "fire", "lightning", "ice"}
+
+function mech.init_state()
+    state.actor = {
+        health = dict{},
+        max_health = dict{},
+        charge = dict{},
+        shield = dict{},
+        offset = dict{},
+        type = dict{},
+        agility = dict{},
+        resist = dict{}
+    }
+end
+
+function mech.resistance(state, id)
+
+end
+
 function mech.identity(id, state, info)
     return make_history(id, state, info)
 end
