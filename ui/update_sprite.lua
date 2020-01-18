@@ -124,7 +124,7 @@ function TestSprite:test()
     local atlas = get_atlas("art/main_actors")
     local sprite = self:child(Sprite, fencer.animations, fencer.atlas)
     sprite:queue{"idle"}
-    sprite:child(require "sfx.shocked")
+    sprite:child(require "sfx.ailment.blind")
 end
 
 return TestSprite
