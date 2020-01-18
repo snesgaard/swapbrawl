@@ -86,6 +86,7 @@ function love.draw()
     gfx.setColor(0.2, 0.3, 0.4, 1)
     gfx.rectangle("fill", 0, 0, w, h)
     gfx.setColor(1, 1, 1)
+    gfx.setLineWidth(1)
     gfx.line(0, h / 2, w, h / 2)
     gfx.line(w / 2, 0, w / 2, h)
     if not settings.origin then

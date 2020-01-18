@@ -1,3 +1,5 @@
+local ailments = require "combat.ailments"
+
 local api = {}
 
 api.resistance = {
@@ -6,7 +8,7 @@ api.resistance = {
 
 api.elements = {"physical", "fire", "thunder", "ice"}
 
-api.ailments = require("combat.ailments").ailments
+api.ailments = ailments.ailments
 
 api.charge_multiplier = 2.0
 
@@ -28,7 +30,8 @@ function api.is_ailment_attack(damage_table)
     return false
 end
 
-function api.health_damage(state, user, target, damage_table)
+function api.health_damage(state, args, damage_table)
+    local user, args = args.user, args.target
     local resist = api.read_resistance(state, target)
     local shield = api.read_shield(state, target)
     local charge = api.read_charge(state, user)
@@ -45,6 +48,11 @@ function api.health_damage(state, user, target, damage_table)
     local function do_damage(type)
         local dmg = damage_table[type]
         if not dmg then return end
+
+        if type(dmg) == "function" then
+            dmg = dmg(state, args)
+        end
+
         if shield then return 0, "void" end
 
         local r = resist[type] or "normal"
@@ -66,7 +74,8 @@ function api.health_damage(state, user, target, damage_table)
 end
 
 
-function api.status_damage(staet, user, target, damage_table)
+function api.status_damage(staet, args, damage_table)
+    local user, args = args.user, args.target
     local info = dict{
         damage = dict(),
         resist = dict(),
@@ -85,6 +94,9 @@ function api.status_damage(staet, user, target, damage_table)
     function do_damage(type)
         local dmg = damage_table[type]
         if not dmg then return end
+        if type(dmg) == "function" then
+            dmg = dmg(state, args)
+        end
         local r = resist[type]
         local scale = api.resistance[r] or 1.0
 
@@ -123,11 +135,11 @@ end
 
 function api.update_status(state, args, status_info)
     local target = args.target
-    local ailment_duration = require("combat.ailments").ailment_duration
+    local ailment_duration = ailments.ailment_duration
 
     local function apply_damage(key, damage)
-        local resist, prev_damage, duration, increase = api.read_ailment_data(
-            state, target
+        local resist, prev_damage, duration, increase = ailments.read_ailment_data(
+            state, key, target
         )
         local next_damage = prev_damage + damage
         local next_resist = resist
@@ -143,8 +155,8 @@ function api.update_status(state, args, status_info)
             next_duration = ailment_duration[key]
         end
 
-        local next_state = api.write_ailment_data(
-            next_resist, next_damage, next_duration
+        local next_state = ailments.write_ailment_data(
+            state, key, target, next_resist, next_damage, next_duration
         )
         return next_state, activated
     end
@@ -192,13 +204,34 @@ function api.handle_drain(state, args, health_info, post_transforms)
     end
 end
 
+function api.immediate_ailments(state, args, status_info, post_transforms)
+    for key, activated in pairs(status_info.activated) do
+        local data = ailments[key]
+        if activated and data.immediate then
+            local transform = data.immediate(state, args)
+            if transforms and #transforms > 0 then
+                table.insert(post_transforms, {
+                    event=string.format("immediate_ailment:%s", key)
+                })
+                for _, t in ipairs(transforms) do
+                    table.insert(post_transforms, t)
+                end
+            end
+        end
+    end
+end
+
 function api.attack(state, args)
     local user = args.user
     local target = args.target
     local damage = args.damage
 
-    local health_info = api.health_damage(state, user, target, damage)
-    local status_info = api.status_damage(state, user, target, damage)
+    if type(damage) == "function" then
+        damage = damage(state, args)
+    end
+
+    local health_info = api.health_damage(state, args, damage)
+    local status_info = api.status_damage(state, args, damage)
 
     local next_state = state
     next_state = api.update_health(state, args, damage, health_info)
@@ -212,9 +245,29 @@ function api.attack(state, args)
     local post_transforms = list()
 
     api.handle_drain(state, args, health_info, post_transforms)
+    api.immediate_ailments(state, args, status_info)
     api.derived_effects(state, args, health_info, status_info, post_transforms)
 
     return next_state, info, post_transforms
+end
+
+function mech.true_damage(state, args)
+    local damage = args.damage
+    if type(damage) == "function" then
+        damage = damage(state, args)
+    end
+    damage = math.max(damage, 0)
+    local history = list()
+    local health = state:read("actor/health/" .. args.target)
+    local actual_damage = math.min(health, damage)
+    local next_health = health - actual_damage
+    local info = {
+        damage = actual_damage, target = args.target,
+        health = next_health
+    }
+    state = state:write("actor/health/" .. args.target, next_health)
+
+    return state, info
 end
 
 
