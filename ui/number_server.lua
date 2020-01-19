@@ -109,13 +109,13 @@ function DamageNumberServer:heal(pos, info)
 end
 
 function DamageNumberServer:damage(pos, info)
-    local dmg = info.damage
+    local dmg = info.total_damage
 
     if info.miss then
         self:number("Miss", pos.x, pos.y)
-    elseif info.shielded then
+    elseif info.shield then
         self:number("Void", pos.x, pos.y)
-    elseif info.crit or info.charged then
+    elseif info.crit or info.charg then
         dmg = tostring(dmg) .. "\nCritical"
         self:number(dmg, pos.x, pos.y, "crit")
     else
@@ -184,6 +184,15 @@ DamageNumberServer.remap["combat.mechanics:damage"] = function(
     local n = root:child()
     local p = sprite:shape():center()
     self:damage(p, info)
+end
+
+DamageNumberServer.remap["combat.damage:attack"] = function(
+        self, state, info, args, root
+)
+    local sprite = get_sprite(root, args.target)
+    local n = root:child()
+    local p = sprite:shape():center()
+    self:damage(p, info.health)
 end
 
 DamageNumberServer.remap["combat.mechanics:true_damage"] = DamageNumberServer.remap["combat.mechanics:damage"]

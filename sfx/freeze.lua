@@ -45,20 +45,21 @@ end
 
 function freeze:on_adopted(parent)
     local shape = get_shape(parent)
+    print("bam", shape)
 
     local function get_x(i)
         if i % 2 == 0 then
-            return -shape.x * 0.5, 0
+            return -shape.w * 0.5, 0
         else
-            return 0, shape.x * 0.5
+            return 0, shape.w * 0.5
         end
     end
 
     local function get_y(i)
         if i < 3 then
-            return shape.y * 0.5, shape.y
+            return -shape.h, -shape.h * 0.5
         else
-            return 0, shape.y * 0.5
+            return -shape.h * 0.5, 0
         end
     end
 

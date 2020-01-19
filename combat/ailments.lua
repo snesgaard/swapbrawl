@@ -1,8 +1,17 @@
 local ailments = {}
 
 ailments.ailments = {
-    "poison", "burn", "bleed", "blast", "stun", "frozen", "blind", "shocked",
-    "wet", "oil", "plague"
+    "poison",
+    "burn",
+    "bleed",
+    "blast",
+    "stun",
+    "frozen",
+    "blind",
+    "shocked",
+    "wet",
+    "oil",
+    "plague"
 }
 
 ailments.duration = {
@@ -19,7 +28,7 @@ ailments.duration = {
 
 function ailments.init_state(state)
     state.ailment = dict()
-    for _, name in ipairs(ailment_names) do
+    for _, name in ipairs(ailments.ailments) do
         state.ailment[name] = dict{
             damage = dict(),
             duration = dict(),
@@ -39,6 +48,11 @@ function ailments.read_ailment_data(state, type, id)
     local duration = state:read(format_path("duration", type, id))
     local increase = state:read(format_path("increase", type, id)) or 1
     return resist, damage, duration, increase
+end
+
+function ailments.is_stunned(state, id)
+    local _, _, duration = ailments.read_ailment_data(state, "stun", id)
+    return (duration or 0) > 0
 end
 
 function ailments.write_ailment_data(
@@ -73,7 +87,7 @@ ailments.poison = {
 }
 
 ailments.blast = {
-    damage=10
+    damage=10,
     ["immediate"] = function(state, args)
         return {
             path="combat.damage:true_damage",

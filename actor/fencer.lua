@@ -58,6 +58,25 @@ local actions = fencer.actions
 
 local animation = require "combat.animation"
 
+actions.test = {
+    name = "Test",
+    target = {type="single", side="other"},
+    help="nope",
+    transform = function(state, user, target)
+        return {
+            path="combat.damage:attack",
+            args = {
+                user=user,
+                target=target,
+                damage={
+                    physical=4,
+                    oil=1
+                }
+            }
+        }
+    end
+}
+
 actions.lunge = {
     name = "Lunge",
     target = {type="single", side="other"},

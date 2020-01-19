@@ -337,6 +337,14 @@ charbar.remap["combat.mechanics:damage"] = function(self, state, info)
     )
 end
 
+charbar.remap["combat.damage:attack"] = function(self, state, info, args)
+    if self.id ~= args.target then return end
+    self:set_hp(
+        state:read(join("actor/health", self.id)),
+        state:read(join("actor/max_health", self.id))
+    )
+end
+
 charbar.remap["combat.mechanics:true_damage"] = charbar.remap["combat.mechanics:damage"]
 
 charbar.remap["combat.mechanics:heal"] = charbar.remap["combat.mechanics:damage"]

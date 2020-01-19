@@ -63,6 +63,7 @@ function mech.heal(state, args)
 end
 
 function mech.damage(state, args)
+    error("Function is deprecated!")
     if not args.user then
         error("There must be a user defined!")
     end

@@ -6,7 +6,7 @@ sfx.blur.gaussianblur.sigma = 5
 function sfx:create()
     self.color = {0.2, 0.7, 0.7, 1}
     self.line = {}
-    self.shape = vec2(100, 100)
+    self.shape = spatial(0, 0, 100, 100)
     self.scale = 1
     self:fork(self.life)
 end
@@ -50,8 +50,8 @@ end
 local function random_pos(shape)
     local rng = love.math.random
     return vec2(
-        rng(-shape.x * 0.5, shape.x * 0.5),
-        rng(-shape.y * 0.5, shape.y * 0.5)
+        rng(-shape.w * 0.5, shape.w * 0.5),
+        rng(-shape.h * 0.5, shape.h * 0.5)
     )
 end
 
@@ -76,7 +76,7 @@ end
 function sfx:__draw()
     if #self.line then
         gfx.push()
-        gfx.translate(0, self.shape.y * 0.5)
+        gfx.translate(0, -self.shape.h * 0.5)
         gfx.scale(self.scale)
 
         gfx.setLineWidth(16)

@@ -30,7 +30,7 @@ end
 function sfx:on_adopted(parent)
     if not parent.shape then return end
     local s = parent:shape()
-    self.__transform.pos = vec2(0, s.y * 0.7)
+    self.__transform.pos = vec2(0, -s.h * 0.7)
 end
 
 function sfx:__update(dt)

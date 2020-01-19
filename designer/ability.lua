@@ -99,5 +99,8 @@ function love.update(dt)
 end
 
 function love.draw()
+    gfx.setColor(0.1, 0.4, 0.4)
+    gfx.rectangle("fill", 0, 0, gfx.getWidth(), gfx.getHeight())
+    gfx.setColor(1, 1, 1)
     nodes:draw()
 end

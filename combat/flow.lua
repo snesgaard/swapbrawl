@@ -34,6 +34,7 @@ end
 
 local function broadcast(root, ...)
     for key, epoch in pairs({...}) do
+        log.info("broadcasting state %s -> %s", epoch.id, tostring(epoch.info))
         event(epoch.id, epoch.state, epoch.info, epoch.args, root)
     end
 end
@@ -380,6 +381,19 @@ flow.remap["combat.mechanics:damage"] = function(self, state, info, args)
     if info.charged and sprite.charge then
         sprite.charge:halt()
         sprite.charge = nil
+    end
+end
+
+flow.remap["combat.damage:attack"] = function(self, state, info, args)
+    local dmg = info.health.total_damage or 0
+    local sprite = get_sprite(self, args.target)
+    if dmg > 0 then
+        sprite:shake()
+    end
+
+    for key, active in pairs(info.ailment.activated) do
+        local f = sprite[key]
+        f(sprite, active)
     end
 end
 
